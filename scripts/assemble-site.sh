@@ -24,6 +24,8 @@ cp "$ROOT/lando/asuncion.html" "$OUT/asuncion.html"
 cp "$ROOT/lando/lando.webmanifest" "$OUT/lando.webmanifest"
 cp "$ROOT/lando/lando-icon.png" "$OUT/lando-icon.png"
 cp "$ROOT/vendor/ws4kp/LICENSE" "$OUT/LICENSE"
+mkdir -p "$OUT/data"
+cp "$ROOT/data/schedule.enc.json" "$OUT/data/schedule.enc.json"
 
 python3 - "$OUT" << 'PY'
 import json, sys
@@ -39,7 +41,7 @@ if "ws4kp.html" not in kiosk:
     raise SystemExit("Kiosk does not load ws4kp.html")
 if "src=\"index.html" in kiosk or "src='index.html" in kiosk:
     raise SystemExit("Kiosk still points the iframe at index.html")
-for rel in ("fonts/Star4000.woff", "fonts/Star4000 Large.woff", "playlist.json", "music/default"):
+for rel in ("fonts/Star4000.woff", "fonts/Star4000 Large.woff", "playlist.json", "music/default", "data/schedule.enc.json"):
     if not (out / rel).exists():
         raise SystemExit(f"Missing {rel} in the assembled site")
 print("Assembled", out)

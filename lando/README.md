@@ -8,7 +8,11 @@ These files are copied onto the built WeatherStar site by `scripts/assemble-site
   - `?crt=false` turns the overlay off
   - `?rotate=SECONDS` changes how long each city stays on screen
   - `?music=false` disables the kiosk music
-  - Music is a single `<audio>` on this page, fed by `playlist.json`. It is not inside the forecast iframe, so a city change does not stop it. WeatherStar's own player stays off (`mediaPlaying=false`).
+  - `?panel=false` hides the side panel
+  - `?ads=false` skips commercial breaks. `?ads=now` starts one after a few seconds (for testing)
+  - Music is a single `<audio>` on this page, fed by `playlist.json`. It pauses during a commercial and resumes after. WeatherStar's own player stays off (`mediaPlaying=false`).
+- Paraguay trip times, the return-flight placeholder, and the YouTube commercial list: `lando/lando-config.js` (`trip`, `commercials`)
+- Schedule: `data/schedule.enc.json` is AES-256-GCM. The device key arrives only as `#k=<base64url>` and is stored in localStorage as `landoWxKey`. Rebuild the file with `node scripts/encrypt-schedule.mjs plain.json <base64url-key>`. Do not commit the key.
 - Home Screen name and icon: `lando/lando.webmanifest` and `lando/lando-icon.png`
 - Music: put `.mp3` files directly in `vendor/ws4kp/server/music/` (not in a subfolder) and rebuild. If that folder has no mp3s, the four royalty-free tracks in `server/music/default/` are used.
 - Austin is a travel city in `vendor/ws4kp/datagenerators/output/travelcities.json` and a regional city in `regionalcities.json`. Cedar Park stays the first station in the rotation.

@@ -13,35 +13,112 @@
 <script src="lando-config.js"></script>
 <style>
 @font-face{font-family:Star4000;src:url("fonts/Star4000.woff") format("woff");font-display:swap}
-html,body{margin:0;height:100%;background:#000;overflow:hidden}
-iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-#bump{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#1b1464,#2e4bb8 60%,#c75a12);color:#fff;font:bold 6vw Arial,sans-serif;text-shadow:4px 4px #000;z-index:9;transition:opacity 1s}
-#bump small{font-size:2.6vw;color:#ffb000}
+@font-face{font-family:StarLarge;src:url("fonts/Star4000 Large.woff") format("woff");font-display:swap}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#fff;font-family:Star4000,Arial,sans-serif}
+#tv{display:flex;height:100%;width:100%}
+#stage{position:relative;flex:1 1 72%;min-width:0;background:#000;overflow:hidden}
+#panel{flex:0 0 28%;width:28%;box-sizing:border-box;overflow:auto;background:linear-gradient(#102080,#1e3ca0 28%,#16308a);border-left:4px solid #e8862a;text-shadow:2px 2px #000}
+body.no-panel #panel{display:none}
+body.no-panel #stage{flex:1 1 100%}
+#stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#bump{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#1b1464,#2e4bb8 60%,#c75a12);color:#fff;font:bold 4.6vw StarLarge,Arial,sans-serif;text-align:center;text-shadow:4px 4px #000;transition:opacity 1s}
+#bump small{font-size:2.1vw;color:#ffb000;font-family:Star4000,Arial,sans-serif}
+#eights{position:absolute;left:3%;bottom:6%;z-index:6;padding:8px 14px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00;border:3px solid #fff;font:bold 22px StarLarge,Arial,sans-serif;letter-spacing:.04em;text-shadow:2px 2px #000}
+#eights[hidden]{display:none}
+#adbreak{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;background:#000}
+#adbreak[hidden]{display:none}
+#ad-bumper{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#1b1464,#2e4bb8 45%,#c75a12);text-align:center;font:bold 5vw StarLarge,Arial,sans-serif;text-shadow:4px 4px #000}
+#ad-bumper small{font-size:2vw;color:#ffb000;font-family:Star4000,Arial,sans-serif;margin-top:1vh}
+#ad-bumper[hidden]{display:none}
+#ad-player{position:relative;flex:1;background:#000;min-height:0}
+#ad-player[hidden]{display:none}
+#yt-slot,#ad-player iframe{position:absolute;inset:0;width:100%;height:100%}
+#ad-caption{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:8px 12px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00;font:bold 20px Star4000,Arial,sans-serif;text-shadow:2px 2px #000}
+#ad-sound{position:absolute;top:12px;right:12px;z-index:3;padding:8px 12px;background:#1b1464;color:#ffb000;border:3px solid #e8862a;font:bold 16px Star4000,Arial,sans-serif;cursor:pointer}
+#ad-sound[hidden]{display:none}
 #crt{pointer-events:none;position:fixed;inset:0;z-index:8;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 12vw rgba(0,0,0,.6)}
-/* Sits above the iframe and the bumper so the first tap is the parent's, even on iOS. */
 #music-catch{position:fixed;inset:0;z-index:30;background:transparent;cursor:pointer;touch-action:manipulation}
-#music-hint{position:fixed;right:2vw;bottom:2.5vh;z-index:31;pointer-events:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(10,20,90,.82);border:3px solid #e8862a;color:#ffb000;font:bold 18px Star4000,Arial,sans-serif;letter-spacing:.06em;text-shadow:2px 2px #000}
+#music-hint{position:fixed;left:2vw;bottom:2.5vh;z-index:31;pointer-events:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(10,20,90,.82);border:3px solid #e8862a;color:#ffb000;font:bold 18px Star4000,Arial,sans-serif;letter-spacing:.06em;text-shadow:2px 2px #000}
 #music-hint svg{display:block;flex:none}
 #music-hint[hidden]{display:none}
+#panel-clock{padding:10px 12px 8px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00}
+#panel-clock .time{font:bold 28px StarLarge,Arial,sans-serif;line-height:1}
+#panel-clock .date{font-size:14px;color:#fff;margin-top:2px}
+.sec{padding:8px 12px 10px;border-bottom:3px solid #e8862a}
+.sec h2{margin:0 0 6px;font:bold 18px StarLarge,Arial,sans-serif;color:#ffff00;letter-spacing:.04em}
+#trip-state{color:#ffb000;font-size:15px}
+#trip-countdown{font:bold 22px StarLarge,Arial,sans-serif;line-height:1.15;margin:4px 0 6px;white-space:pre-line}
+.leg,.lay,#trip-return,#clocks,#asu-wx,#fx,#sun,#moon,#aqi{font-size:15px;line-height:1.35}
+.lay{color:#8cf}
+.day-h{margin-top:6px;color:#ffb000}
+.ev{margin:2px 0 4px}
+.ev .loc{color:#8cf}
+#schedule-body{font-size:15px;line-height:1.3}
 </style>
 </head>
 <body>
-<iframe id="f" title="Local forecast" allow="fullscreen"></iframe>
+<div id="tv">
+  <div id="stage">
+    <iframe id="f" title="Local forecast" allow="fullscreen"></iframe>
+    <div id="bump">THE LANDO<br>WEATHER CHANNEL<small id="bn">LOCAL ON THE 8s</small></div>
+    <div id="eights" hidden>LOCAL ON THE 8s</div>
+    <div id="adbreak" hidden>
+      <div id="ad-bumper">WE'LL BE RIGHT BACK<small>THE LANDO WEATHER CHANNEL</small></div>
+      <div id="ad-player" hidden>
+        <div id="yt-slot"></div>
+        <div id="ad-caption"></div>
+        <button id="ad-sound" type="button" hidden>TAP FOR SOUND</button>
+      </div>
+    </div>
+  </div>
+  <aside id="panel" aria-label="Trip, schedule, and local conditions">
+    <div id="panel-clock"><div class="time" id="clock-time">--:--:--</div><div class="date" id="clock-date"></div></div>
+    <section class="sec" id="trip">
+      <h2>PARAGUAY TRIP</h2>
+      <div id="trip-state">DEPARTS IN</div>
+      <div id="trip-countdown">--</div>
+      <div id="trip-detail"></div>
+      <div id="trip-return">RETURN: TBD</div>
+      <div id="clocks"></div>
+      <div id="asu-wx">ASUNCION --</div>
+      <div id="fx">1 USD = … PYG</div>
+    </section>
+    <section class="sec" id="schedule">
+      <h2>MY SCHEDULE</h2>
+      <div id="schedule-body">SCHEDULE LOCKED</div>
+    </section>
+    <section class="sec" id="home">
+      <h2>HOME &amp; LOCAL</h2>
+      <div id="sun">SUNRISE -- · SUNSET --</div>
+      <div id="moon">MOON --</div>
+      <div id="aqi">AQI -- · UV --</div>
+    </section>
+  </aside>
+</div>
 <div id="crt"></div>
-<div id="bump">THE LANDO<br>WEATHER CHANNEL<small id="bn">LOCAL ON THE 8s</small></div>
 <audio id="music" preload="auto" playsinline></audio>
 <div id="music-catch" aria-hidden="true"></div>
 <div id="music-hint"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#ffb000" d="M3 9v6h4l5 4V5L7 9H3z"/><path fill="none" stroke="#ffb000" stroke-width="2" stroke-linecap="round" d="M16.5 9a3.5 3.5 0 010 6M19 6.5a7 7 0 010 11"/></svg>TAP FOR MUSIC</div>
 <script>
 const C = window.LANDO;
 const qs = new URLSearchParams(location.search);
-let i = 0;
-const f = document.getElementById('f');
-const b = document.getElementById('bump');
+const rotateMs = (+qs.get('rotate') || C.rotateSeconds) * 1000;
+const adsOff = qs.get('ads') === 'false';
+const adsNow = qs.get('ads') === 'now';
+const musicOff = qs.get('music') === 'false';
+if (qs.get('panel') === 'false') document.body.classList.add('no-panel');
 if (qs.get('crt') === 'false') document.getElementById('crt').remove();
 
-// ws4kp.html is the static WeatherStar page. index.html is this kiosk,
-// so the forecast must not be loaded from index.html (that would nest the bumper).
+let i = 0;
+let shown = 0;
+let breakRunning = false;
+let breakHold = false;
+let musicWasPlaying = false;
+const f = document.getElementById('f');
+const b = document.getElementById('bump');
+
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
 function url(s) {
   if (s.page) {
     const join = s.page.includes('?') ? '&' : '?';
@@ -50,14 +127,12 @@ function url(s) {
   return 'ws4kp.html?' + C.common + '&customText=' + encodeURIComponent(C.ticker) + '&' + s.query;
 }
 
-function show() {
+function showCity() {
   const s = C.stations[i];
   document.getElementById('bn').textContent = 'NOW: ' + s.name.toUpperCase();
   b.style.pointerEvents = 'auto';
   b.style.opacity = 1;
   setTimeout(() => {
-    // Reloading the iframe must not touch #music. The player lives on this page
-    // so a city change does not drop iOS user activation.
     f.src = url(s);
     setTimeout(() => {
       b.style.opacity = 0;
@@ -65,13 +140,10 @@ function show() {
     }, 2500);
   }, 1200);
   i = (i + 1) % C.stations.length;
+  shown += 1;
 }
 
-show();
-setInterval(show, (+qs.get('rotate') || C.rotateSeconds) * 1000);
-
-// ---- kiosk music: one audio element, outside the rotating iframe ----
-const musicOff = qs.get('music') === 'false';
+// ---- music stays on this page, not in the rotating iframe ----
 const audio = document.getElementById('music');
 const catcher = document.getElementById('music-catch');
 const hint = document.getElementById('music-hint');
@@ -85,10 +157,35 @@ function hideUnlock() {
   if (catcher.isConnected) catcher.remove();
   hint.hidden = true;
 }
-
 function showUnlock() {
+  if (breakHold) return;
   if (!catcher.isConnected) document.body.appendChild(catcher);
   hint.hidden = false;
+}
+function holdMusic() {
+  breakHold = true;
+  ignorePause = true;
+  hint.hidden = true;
+  if (catcher.isConnected) catcher.remove();
+  if (!musicOff && audio && !audio.paused) {
+    musicWasPlaying = true;
+    audio.pause();
+  } else {
+    musicWasPlaying = false;
+  }
+}
+function releaseMusic() {
+  const resume = musicWasPlaying;
+  musicWasPlaying = false;
+  breakHold = false;
+  if (resume && !musicOff && audio) {
+    ignorePause = true;
+    const pending = audio.play();
+    if (pending && pending.then) pending.catch(() => { ignorePause = false; showUnlock(); });
+  } else {
+    ignorePause = false;
+    if (!unlocked && !musicOff) showUnlock();
+  }
 }
 
 if (musicOff) {
@@ -96,12 +193,10 @@ if (musicOff) {
   audio.remove();
 } else {
   audio.volume = 0.75;
-
   function trackUrl(file) {
     const parts = String(file).split('/').filter((part) => part && part !== '.' && part !== '..');
     return 'music/' + parts.map((part) => encodeURIComponent(part)).join('/');
   }
-
   function shuffle(list) {
     const a = list.slice();
     for (let n = a.length - 1; n > 0; n -= 1) {
@@ -112,9 +207,8 @@ if (musicOff) {
     }
     return a;
   }
-
   function playIndex(index) {
-    if (!tracks.length) return;
+    if (!tracks.length || breakHold) return;
     trackIndex = ((index % tracks.length) + tracks.length) % tracks.length;
     const next = trackUrl(tracks[trackIndex]);
     const absolute = new URL(next, location.href).href;
@@ -123,22 +217,15 @@ if (musicOff) {
     else if (audio.ended || !audio.currentTime) audio.currentTime = 0;
     audio.volume = 0.75;
     const pending = audio.play();
-    if (pending && pending.then) {
-      pending.catch(() => {
-        ignorePause = false;
-        showUnlock();
-      });
-    } else {
-      ignorePause = false;
-    }
+    if (pending && pending.then) pending.catch(() => { ignorePause = false; showUnlock(); });
+    else ignorePause = false;
   }
-
   function onGesture() {
+    if (breakHold) return;
     unlocked = true;
     if (!audio.paused && audio.currentTime > 0) return;
     playIndex(trackIndex);
   }
-
   catcher.addEventListener('pointerdown', onGesture);
   catcher.addEventListener('touchend', onGesture);
   catcher.addEventListener('click', onGesture);
@@ -146,33 +233,18 @@ if (musicOff) {
     if (event.repeat) return;
     onGesture();
   });
-
-  audio.addEventListener('playing', () => {
-    ignorePause = false;
-    errorStreak = 0;
-    hideUnlock();
-  });
-
+  audio.addEventListener('playing', () => { ignorePause = false; errorStreak = 0; hideUnlock(); });
   audio.addEventListener('pause', () => {
-    // ended also pauses; the ended handler advances the playlist. A pause in
-    // between tracks, or from assigning src, must not bring the tap layer back.
     const atEnd = Number.isFinite(audio.duration) && audio.currentTime >= audio.duration - 0.3;
-    if (!unlocked || ignorePause || audio.ended || atEnd) return;
+    if (!unlocked || ignorePause || breakHold || audio.ended || atEnd) return;
     showUnlock();
   });
-
-  audio.addEventListener('ended', () => {
-    playIndex(trackIndex + 1);
-  });
-
+  audio.addEventListener('ended', () => { if (!breakHold) playIndex(trackIndex + 1); });
   audio.addEventListener('error', () => {
     errorStreak += 1;
-    if (!tracks.length || errorStreak > tracks.length) {
-      showUnlock();
-      return;
-    }
+    if (!tracks.length || errorStreak > tracks.length) { showUnlock(); return; }
     const next = (trackIndex + 1) % tracks.length;
-    if (unlocked) playIndex(next);
+    if (unlocked && !breakHold) playIndex(next);
     else {
       trackIndex = next;
       ignorePause = true;
@@ -180,25 +252,387 @@ if (musicOff) {
       ignorePause = false;
     }
   });
-
-  fetch('playlist.json')
-    .then((res) => {
-      if (!res.ok) throw new Error('playlist ' + res.status);
-      return res.json();
-    })
-    .then((data) => {
-      tracks = shuffle((data.availableFiles || []).filter(Boolean));
-      if (!tracks.length) return;
-      ignorePause = true;
-      audio.src = trackUrl(tracks[0]);
-      audio.volume = 0.75;
-      ignorePause = false;
-      if (unlocked) playIndex(0);
-    })
-    .catch(() => {
-      showUnlock();
-    });
+  fetch('playlist.json').then((res) => {
+    if (!res.ok) throw new Error('playlist');
+    return res.json();
+  }).then((data) => {
+    tracks = shuffle((data.availableFiles || []).filter(Boolean));
+    if (!tracks.length) return;
+    ignorePause = true;
+    audio.src = trackUrl(tracks[0]);
+    audio.volume = 0.75;
+    ignorePause = false;
+    if (unlocked && !breakHold) playIndex(0);
+  }).catch(() => showUnlock());
 }
+
+// ---- commercial breaks in the main area; the side panel stays up ----
+let currentAdPlayer = null;
+function loadYouTube() {
+  if (window.YT && window.YT.Player) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('yt')), 8000);
+    window.onYouTubeIframeAPIReady = () => { clearTimeout(timer); resolve(); };
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.onerror = () => { clearTimeout(timer); reject(new Error('yt')); };
+    document.head.appendChild(script);
+  });
+}
+function resetSlot() {
+  const host = document.getElementById('ad-player');
+  if (!document.getElementById('yt-slot')) {
+    const slot = document.createElement('div');
+    slot.id = 'yt-slot';
+    host.insertBefore(slot, host.firstChild);
+  }
+}
+function pickCommercials() {
+  const list = shuffleCopy(C.commercials || []);
+  const count = Math.min(list.length, 2 + Math.floor(Math.random() * 2));
+  return list.slice(0, count);
+}
+function shuffleCopy(list) {
+  const a = list.slice();
+  for (let n = a.length - 1; n > 0; n -= 1) {
+    const j = Math.floor(Math.random() * (n + 1));
+    const swap = a[n];
+    a[n] = a[j];
+    a[j] = swap;
+  }
+  return a;
+}
+function playCommercial(spot) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let player = null;
+    let capTimer = null;
+    const sound = document.getElementById('ad-sound');
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(startTimer);
+      clearTimeout(capTimer);
+      sound.hidden = true;
+      currentAdPlayer = null;
+      try { if (player && player.destroy) player.destroy(); } catch (e) { /* already gone */ }
+      resetSlot();
+      resolve();
+    };
+    const startTimer = setTimeout(finish, 8000);
+    document.getElementById('ad-caption').textContent = spot.title + '  ' + spot.year;
+    try {
+      player = new YT.Player('yt-slot', {
+        videoId: spot.id,
+        host: 'https://www.youtube-nocookie.com',
+        playerVars: {
+          autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1, fs: 0, iv_load_policy: 3, origin: location.origin,
+        },
+        events: {
+          onReady: (event) => {
+            currentAdPlayer = event.target;
+            try { event.target.unMute(); event.target.setVolume(100); event.target.playVideo(); } catch (e) { /* 8s skip still armed */ }
+            setTimeout(() => {
+              if (settled) return;
+              let state = -1;
+              try { state = event.target.getPlayerState(); } catch (e) { state = -1; }
+              if (state !== 1 && state !== 3) {
+                try { event.target.mute(); event.target.playVideo(); sound.hidden = false; } catch (e) { /* skip timer */ }
+              }
+            }, 1500);
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PLAYING) {
+              clearTimeout(startTimer);
+              if (!capTimer) capTimer = setTimeout(finish, 75000);
+              let muted = false;
+              try { muted = event.target.isMuted(); } catch (e) { muted = false; }
+              sound.hidden = !muted;
+            } else if (event.data === YT.PlayerState.ENDED) finish();
+          },
+          onError: () => finish(),
+        },
+      });
+    } catch (e) { finish(); }
+  });
+}
+document.getElementById('ad-sound').addEventListener('click', () => {
+  if (!currentAdPlayer) return;
+  try { currentAdPlayer.unMute(); currentAdPlayer.setVolume(100); currentAdPlayer.playVideo(); } catch (e) { /* stay muted */ }
+  document.getElementById('ad-sound').hidden = true;
+});
+async function runBreak() {
+  if (adsOff || breakRunning || !(C.commercials || []).length) return;
+  breakRunning = true;
+  const ad = document.getElementById('adbreak');
+  const bumper = document.getElementById('ad-bumper');
+  const playerWrap = document.getElementById('ad-player');
+  ad.hidden = false;
+  bumper.hidden = false;
+  playerWrap.hidden = true;
+  holdMusic();
+  await sleep(4000);
+  bumper.hidden = true;
+  playerWrap.hidden = false;
+  let ready = true;
+  try { await loadYouTube(); } catch (e) { ready = false; }
+  if (ready) {
+    for (const spot of pickCommercials()) await playCommercial(spot);
+  }
+  ad.hidden = true;
+  playerWrap.hidden = true;
+  bumper.hidden = false;
+  breakRunning = false;
+  releaseMusic();
+}
+
+async function rotationLoop() {
+  showCity();
+  if (adsNow) {
+    await sleep(4000);
+    await runBreak();
+  }
+  for (;;) {
+    await sleep(rotateMs);
+    if (!adsOff && shown % (C.adsEvery || 3) === 0) await runBreak();
+    showCity();
+  }
+}
+
+// ---- side panel ----
+const chicago = C.home.timezone;
+const asuZone = C.asuncion.timezone;
+function hm(iso, zone) {
+  if (!iso || !zone) return '';
+  return new Date(iso).toLocaleTimeString('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit' });
+}
+function ymd(date, zone) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+function dayNumber(arrival, now) {
+  const a = Date.parse(ymd(arrival, asuZone) + 'T12:00:00Z');
+  const b = Date.parse(ymd(now, asuZone) + 'T12:00:00Z');
+  return Math.floor((b - a) / 86400000) + 1;
+}
+function remain(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(s / 86400);
+  const hrs = Math.floor((s % 86400) / 3600);
+  const min = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return days + ' DAYS  ' + hrs + ' HRS  ' + String(min).padStart(2, '0') + ' MIN  ' + String(sec).padStart(2, '0') + ' SEC';
+}
+function paintTrip() {
+  const now = new Date();
+  const legs = C.trip.outbound || [];
+  const ret = C.trip.returnTrip || {};
+  const state = document.getElementById('trip-state');
+  const big = document.getElementById('trip-countdown');
+  const first = legs[0] ? new Date(legs[0].depart) : null;
+  const lastArr = legs.length ? new Date(legs[legs.length - 1].arrive) : null;
+  let mode = 'countdown';
+  let leg = null;
+  if (first && now < first) mode = 'countdown';
+  else {
+    for (let n = 0; n < legs.length; n += 1) {
+      const dep = new Date(legs[n].depart);
+      const arr = new Date(legs[n].arrive);
+      if (now >= dep && now < arr) { mode = 'enroute'; leg = legs[n]; break; }
+      if (n < legs.length - 1 && now >= arr && now < new Date(legs[n + 1].depart)) { mode = 'layover'; leg = legs[n + 1]; break; }
+    }
+    if (!leg && lastArr && now >= lastArr) {
+      if (ret.depart && now < new Date(ret.depart)) mode = 'return-count';
+      else if (ret.depart && ret.arrive && now < new Date(ret.arrive)) { mode = 'enroute'; leg = ret; }
+      else if (ret.arrive && now >= new Date(ret.arrive)) mode = 'home';
+      else mode = 'paraguay';
+    }
+  }
+  if (mode === 'countdown') {
+    state.textContent = 'DEPARTS IN';
+    big.textContent = remain(first - now);
+  } else if (mode === 'enroute') {
+    state.textContent = 'EN ROUTE';
+    big.textContent = leg.flight + '  ' + leg.from + ' → ' + leg.to;
+    big.textContent += '\nLANDS IN  ' + remain(new Date(leg.arrive) - now);
+  } else if (mode === 'layover') {
+    state.textContent = 'LAYOVER';
+    big.textContent = remain(new Date(leg.depart) - now);
+  } else if (mode === 'return-count') {
+    state.textContent = 'IN PARAGUAY - DAY ' + dayNumber(lastArr, now);
+    big.textContent = 'RETURN IN  ' + remain(new Date(ret.depart) - now);
+  } else if (mode === 'home') {
+    state.textContent = 'WELCOME HOME';
+    big.textContent = 'RETURN: COMPLETE';
+  } else {
+    state.textContent = 'IN PARAGUAY - DAY ' + Math.max(1, dayNumber(lastArr, now));
+    big.textContent = 'RETURN: TBD';
+  }
+  const bits = [];
+  legs.forEach((item, idx) => {
+    if (idx === 1 && C.trip.layover) bits.push('<div class="lay">LAYOVER ' + C.trip.layover + '</div>');
+    bits.push('<div class="leg"><b>' + item.flight + '</b> ' + item.from + ' ' + hm(item.depart, item.departZone) + ' → ' + item.to + ' ' + hm(item.arrive, item.arriveZone) + '</div>');
+  });
+  document.getElementById('trip-detail').innerHTML = bits.join('');
+  if (!ret.depart) document.getElementById('trip-return').textContent = 'RETURN: TBD';
+  else document.getElementById('trip-return').textContent = 'RETURN ' + (ret.flight || '') + ' ' + (ret.from || '') + ' ' + hm(ret.depart, ret.departZone) + ' → ' + (ret.to || '') + ' ' + hm(ret.arrive, ret.arriveZone);
+}
+function paintClock() {
+  const now = new Date();
+  document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { timeZone: chicago, hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { timeZone: chicago, weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+  document.getElementById('clocks').textContent = 'AUSTIN ' + now.toLocaleTimeString('en-US', { timeZone: chicago, hour: 'numeric', minute: '2-digit' }) + '   ·   ASUNCION ' + now.toLocaleTimeString('en-US', { timeZone: asuZone, hour: 'numeric', minute: '2-digit' });
+  const minute = +new Intl.DateTimeFormat('en-US', { timeZone: chicago, minute: 'numeric', hour12: false }).format(now);
+  const second = +new Intl.DateTimeFormat('en-US', { timeZone: chicago, second: 'numeric', hour12: false }).format(now);
+  document.getElementById('eights').hidden = !(minute % 10 === 8 && second < 8);
+}
+function wxLabel(code, isDay) {
+  if (code === 0) return isDay ? 'SUNNY' : 'CLEAR';
+  if (code === 1) return isDay ? 'MOSTLY SUNNY' : 'MOSTLY CLEAR';
+  const names = { 2: 'PARTLY CLOUDY', 3: 'CLOUDY', 45: 'FOG', 48: 'FOG', 51: 'DRIZZLE', 53: 'DRIZZLE', 55: 'DRIZZLE', 61: 'LIGHT RAIN', 63: 'RAIN', 65: 'HEAVY RAIN', 80: 'SHOWERS', 81: 'SHOWERS', 82: 'HEAVY SHOWERS', 95: 'T-STORMS', 96: 'T-STORMS', 99: 'T-STORMS' };
+  return names[code] || '—';
+}
+function aqiName(n) {
+  if (n == null || Number.isNaN(+n)) return null;
+  if (n <= 50) return 'GOOD';
+  if (n <= 100) return 'MODERATE';
+  if (n <= 150) return 'SENSITIVE';
+  if (n <= 200) return 'UNHEALTHY';
+  if (n <= 300) return 'VERY UNHEALTHY';
+  return 'HAZARDOUS';
+}
+function moonName(date) {
+  const synodic = 29.530588853;
+  const knownNew = Date.UTC(2000, 0, 6, 18, 14, 0);
+  let age = ((date.getTime() - knownNew) / 86400000) % synodic;
+  if (age < 0) age += synodic;
+  const names = ['NEW MOON', 'WAXING CRESCENT', 'FIRST QUARTER', 'WAXING GIBBOUS', 'FULL MOON', 'WANING GIBBOUS', 'LAST QUARTER', 'WANING CRESCENT'];
+  return names[Math.round((age / synodic) * 8) % 8];
+}
+async function paintAsuncion() {
+  const el = document.getElementById('asu-wx');
+  try {
+    const { lat, lon } = C.asuncion;
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit&timezone=America%2FAsuncion');
+    if (!res.ok) throw new Error('wx');
+    const data = await res.json();
+    const cur = data.current;
+    el.textContent = 'ASUNCION ' + Math.round(cur.temperature_2m) + '° ' + wxLabel(cur.weather_code, cur.is_day === 1);
+  } catch (e) { el.textContent = 'ASUNCION N/A'; }
+}
+async function paintFx() {
+  const el = document.getElementById('fx');
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (!res.ok) throw new Error('fx');
+    const data = await res.json();
+    const pyg = data && data.rates && data.rates.PYG;
+    if (!pyg) throw new Error('fx');
+    el.textContent = '1 USD = ' + Math.round(pyg).toLocaleString('en-US') + ' PYG';
+  } catch (e) { el.textContent = '1 USD = RATE N/A'; }
+}
+async function paintHome() {
+  document.getElementById('moon').textContent = 'MOON ' + moonName(new Date());
+  try {
+    const { lat, lon } = C.home;
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&daily=sunrise,sunset&timezone=America%2FChicago&forecast_days=1');
+    if (!res.ok) throw new Error('sun');
+    const data = await res.json();
+    // Open-Meteo already returns these as Cedar Park wall times, not UTC instants.
+    const wall = (stamp) => {
+      const [hourStr, minuteStr] = String(stamp).split('T')[1].split(':');
+      const hour = Number(hourStr);
+      const minute = Number(minuteStr);
+      const suffix = hour >= 12 ? 'PM' : 'AM';
+      return (hour % 12 || 12) + ':' + String(minute).padStart(2, '0') + ' ' + suffix;
+    };
+    document.getElementById('sun').textContent = 'SUNRISE ' + wall(data.daily.sunrise[0]) + '  ·  SUNSET ' + wall(data.daily.sunset[0]);
+  } catch (e) { document.getElementById('sun').textContent = 'SUNRISE N/A  ·  SUNSET N/A'; }
+  try {
+    const { lat, lon } = C.home;
+    const res = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + lat + '&longitude=' + lon + '&current=us_aqi,uv_index&timezone=America%2FChicago');
+    if (!res.ok) throw new Error('aqi');
+    const data = await res.json();
+    const aqi = data.current.us_aqi;
+    const uv = data.current.uv_index;
+    const name = aqiName(aqi);
+    document.getElementById('aqi').textContent = 'AQI ' + (aqi == null ? 'N/A' : Math.round(aqi) + (name ? ' ' + name : '')) + '  ·  UV ' + (uv == null ? 'N/A' : Math.round(uv));
+  } catch (e) { document.getElementById('aqi').textContent = 'AQI N/A  ·  UV N/A'; }
+}
+
+const SCHEDULE_KEY = 'landoWxKey';
+function bytesFromB64(text) {
+  const bin = atob(text);
+  const out = new Uint8Array(bin.length);
+  for (let n = 0; n < bin.length; n += 1) out[n] = bin.charCodeAt(n);
+  return out;
+}
+function bytesFromB64url(text) {
+  const pad = text.replace(/-/g, '+').replace(/_/g, '/');
+  return bytesFromB64(pad + '='.repeat((4 - (pad.length % 4)) % 4));
+}
+function captureKey() {
+  const fromHash = new URLSearchParams(location.hash.replace(/^#/, '')).get('k');
+  if (fromHash) {
+    localStorage.setItem(SCHEDULE_KEY, fromHash);
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  return localStorage.getItem(SCHEDULE_KEY);
+}
+function chicagoDay(iso) { return ymd(new Date(iso), chicago); }
+function esc(text) {
+  return String(text == null ? '' : text).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+}
+function renderSchedule(data) {
+  const body = document.getElementById('schedule-body');
+  const now = new Date();
+  const today = ymd(now, chicago);
+  const tomorrow = ymd(new Date(now.getTime() + 86400000), chicago);
+  const groups = [{ label: 'TODAY', day: today }, { label: 'TOMORROW', day: tomorrow }];
+  const events = (data && data.events) || [];
+  const html = [];
+  groups.forEach((group) => {
+    const rows = events.filter((event) => chicagoDay(event.start) === group.day);
+    if (!rows.length) return;
+    html.push('<div class="day-h">' + group.label + '</div>');
+    rows.sort((a, b) => new Date(a.start) - new Date(b.start)).forEach((event) => {
+      const when = event.allDay ? 'ALL DAY' : hm(event.start, chicago);
+      const loc = event.location ? '<div class="loc">' + esc(event.location) + '</div>' : '';
+      html.push('<div class="ev"><b>' + esc(when) + '</b>  ' + esc(event.title) + loc + '</div>');
+    });
+  });
+  body.innerHTML = html.length ? html.join('') : 'NO EVENTS';
+}
+function renderLocked() { document.getElementById('schedule-body').textContent = 'SCHEDULE LOCKED'; }
+let scheduleHadData = false;
+async function loadSchedule() {
+  const key = localStorage.getItem(SCHEDULE_KEY);
+  if (!key) { renderLocked(); return; }
+  try {
+    const res = await fetch('data/schedule.enc.json?t=' + Date.now());
+    if (!res.ok) throw new Error('fetch');
+    const payload = await res.json();
+    const raw = bytesFromB64url(key);
+    if (raw.byteLength !== 32) throw new Error('key');
+    const cryptoKey = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+    const buf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytesFromB64(payload.iv) }, cryptoKey, bytesFromB64(payload.ct));
+    renderSchedule(JSON.parse(new TextDecoder().decode(buf)));
+    scheduleHadData = true;
+  } catch (e) {
+    if (!scheduleHadData || e.name === 'OperationError' || e.message === 'key') renderLocked();
+  }
+}
+
+function tick() { paintClock(); paintTrip(); }
+tick();
+setInterval(tick, 1000);
+paintAsuncion();
+paintFx();
+paintHome();
+setInterval(() => { paintAsuncion(); paintFx(); paintHome(); }, 600000);
+captureKey();
+loadSchedule();
+setInterval(loadSchedule, 600000);
+rotationLoop();
 </script>
 </body>
 </html>
