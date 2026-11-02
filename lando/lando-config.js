@@ -1,9 +1,9 @@
-// ==== LANDO WEATHER CHANNEL CONFIG — edit here ====
+// ==== LANDO'S WEATHER LOUNGE CONFIG — edit here ====
 // Austin is not its own rotation stop. It shows up on the Cedar Park
 // regional map and in the national travel-cities list (see vendor/ws4kp).
 window.LANDO = {
   rotateSeconds: 240,          // time on each location before switching
-  ticker: "Welcome to the Lando Weather Channel ... Local on the 8s ... Cedar Park * Austin * Sarasota * Asuncion ... Stay tuned for your local forecast ... Buen viaje, Landon!",
+  ticker: "Welcome to Lando's Weather Lounge ... On the 8s ... Smooth jazz and sunny skies ... Cedar Park * Austin * Sarasota * Asuncion ... Buen viaje, Landon!",
   // NWS (US) locations: ws4kp query params. Austin appears via regional/nearby lists + travel cities.
   stations: [
     { name: "Cedar Park, TX", query: "latLonQuery=Cedar+Park%2C+TX%2C+USA&latLon=%7B%22lat%22%3A30.5052%2C%22lon%22%3A-97.8203%7D" },
@@ -11,7 +11,7 @@ window.LANDO = {
     { name: "Asuncion, PY",   page: "asuncion.html?lat=-25.2637&lon=-57.5759&name=ASUNCION" },
   ],
   // Music plays on the kiosk page, not in the forecast iframe. mediaPlaying=false
-  // keeps WeatherStar from starting a second player that iOS would silence on each rotation.
+  // keeps the forecast page from starting a second player that iOS would silence on each rotation.
   common: "hazards=true&current-weather=true&latest-observations=true&hourly=false&hourly-graph=true&travel=true&regional-forecast=true&local-forecast=true&extended-forecast=true&almanac=true&spc-outlook=false&radar=true&future-radar=false&kiosk=true&units=us&scanLines=true&scanLineMode=auto&mediaPlaying=false&mediaVolume=0&customTextEnable=true&speed=1.00",
 
   // Cedar Park home strip. Pollen is not listed: the free Open-Meteo pollen feed is Europe-only.
@@ -29,11 +29,21 @@ window.LANDO = {
 
   // Scheduled times only. No booking code, passenger name, or seat — this site is public.
   // A layover string on a leg is the wait before that leg.
+  // Callsigns are the operating ICAO flight IDs used for ADS-B.
+  // Nov 2026 schedules list UA 1249 PTY–IAH as United-operated (UAL1249), also sold as Copa CM 1927.
+  // UA 2483 IAH–AUS is United-operated (UAL2483).
+  airports: {
+    AUS: { lat: 30.1944, lon: -97.6699 },
+    PTY: { lat: 9.0714, lon: -79.3835 },
+    ASU: { lat: -25.2398, lon: -57.5191 },
+    IAH: { lat: 29.9844, lon: -95.3414 },
+  },
   trip: {
     hotel: { name: "Sheraton Asuncion", dates: "NOV 3-6" },
     outbound: [
       {
         flight: "CM 716",
+        callsign: "CMP716",
         from: "AUS",
         depart: "2026-11-02T14:32:00-06:00",
         departZone: "America/Chicago",
@@ -43,6 +53,7 @@ window.LANDO = {
       },
       {
         flight: "CM 291",
+        callsign: "CMP291",
         layover: "1h23m",
         from: "PTY",
         depart: "2026-11-02T21:23:00-05:00",
@@ -56,6 +67,7 @@ window.LANDO = {
     returnTrip: [
       {
         flight: "CM 206",
+        callsign: "CMP206",
         from: "ASU",
         depart: "2026-11-06T01:47:00-03:00",
         departZone: "America/Asuncion",
@@ -65,7 +77,7 @@ window.LANDO = {
       },
       {
         flight: "UA 1249",
-        operatedBy: "Copa",
+        callsign: "UAL1249",
         layover: "2h57m",
         from: "PTY",
         depart: "2026-11-06T08:55:00-05:00",
@@ -76,6 +88,7 @@ window.LANDO = {
       },
       {
         flight: "UA 2483",
+        callsign: "UAL2483",
         layover: "1h55m",
         from: "IAH",
         depart: "2026-11-06T14:10:00-06:00",
