@@ -84,7 +84,7 @@ body.channel-break #adbreak[hidden]{display:none !important}
 #trip-state{color:#ffb000;font-size:18px;letter-spacing:.05em}
 #trip-countdown{font:bold 28px StarLarge,Arial,sans-serif;line-height:1.12;margin:8px 0 12px;white-space:pre-line}
 #leg-now{font-size:18px;line-height:1.25;margin:0 0 10px}
-#leg-now .kicker{color:#8cf;font-size:14px;letter-spacing:.08em}
+#leg-now .kicker{display:inline;margin-right:6px;color:#8cf;font-size:14px;letter-spacing:.08em}
 #trip-hotel{color:#8cf;font-size:16px;line-height:1.3}
 .leg b{color:#ffff00}
 #map-pin{position:relative;z-index:3;flex:0 0 auto;width:100%;display:flex;flex-direction:column;background:#06122e;border-bottom:3px solid #e8862a}
@@ -122,33 +122,48 @@ body.map-open #map-close{display:block}
 .credit{margin:0;padding:8px 18px 28px;color:#8cf;font-size:13px}
 @media (max-width:520px){
   #tv{flex-direction:column;padding-top:calc(env(safe-area-inset-top) + 52px)}
-  #stage{flex:1 1 36%;min-height:200px}
-  #panel{width:100%;flex:1 1 64%;height:auto;max-height:none;min-height:0;border-left:0;border-top:4px solid #e8862a;padding-bottom:calc(54px + env(safe-area-inset-bottom))}
+  #stage{flex:1 1 30%;min-height:220px}
+  #panel{width:100%;flex:1 1 70%;height:auto;max-height:none;min-height:0;border-left:0;border-top:4px solid #e8862a;padding-bottom:0}
   #flight-line{white-space:normal}
   #map-pin-canvas{flex:0 0 200px;height:200px;min-height:200px}
   #map-stats{font-size:15px;padding:6px 8px 7px}
   .ms-head{margin-bottom:3px}
   .ms-grid{gap:3px 10px}
   #ms-meter{height:12px;margin-top:6px}
-  .clock-block{padding:6px 10px 6px}
-  #clock-time{font-size:24px}
-  #clock-date{margin-top:1px;font-size:13px}
-  #panel-viewport{flex:1 1 auto;min-height:56px;height:auto}
+  .clock-block{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:4px 10px 2px}
+  #clock-time{font-size:20px}
+  #clock-date{margin-top:0;font-size:12px}
+  .block{padding:6px 10px 6px}
+  .sec-head{margin:0 0 4px;padding:3px 8px;font-size:16px}
+  #trip-state{font-size:13px}
+  #trip-countdown{font-size:18px;line-height:1.15;margin:2px 0 4px}
+  #leg-now{font-size:15px;line-height:1.25;margin:0 0 3px}
+  #trip-hotel{font-size:14px;line-height:1.25}
+  #panel-viewport{flex:1 1 auto;min-height:0;height:auto;margin-bottom:calc(72px + env(safe-area-inset-bottom))}
   #ch-menu{max-height:210px}
 }
 @media (orientation:landscape) and (max-height:500px){
-  #panel{flex:0 0 42%;width:42%;padding-bottom:calc(56px + env(safe-area-inset-bottom))}
+  #panel{flex:0 0 42%;width:42%;padding-bottom:0}
   #map-pin-canvas{flex:0 0 150px;height:150px;min-height:150px}
   #map-stats{font-size:12px;padding:4px 7px 5px;line-height:1.15}
   .ms-head{margin-bottom:2px}
   .ms-grid{gap:2px 8px}
   #ms-meter{height:12px;margin-top:4px}
-  .clock-block{padding:3px 8px 4px}
-  #clock-time{font-size:20px}
+  .clock-block{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;padding:2px 8px 2px}
+  #clock-time{font-size:15px}
   #clock-date{margin-top:0;font-size:11px}
-  #panel-viewport{flex:0 0 40px;height:40px;min-height:40px}
+  .block{padding:4px 8px 3px}
+  .sec-head{margin:0 0 2px;padding:2px 6px;font-size:13px}
+  #trip-state{font-size:11px}
+  #trip-countdown{font-size:14px;line-height:1.15;margin:1px 0 2px}
+  #leg-now{font-size:12px;line-height:1.2;margin:0 0 2px}
+  #leg-now .kicker{font-size:11px}
+  #trip-hotel{font-size:12px;line-height:1.25}
+  #panel-viewport{flex:1 1 auto;height:auto;min-height:0;padding:0 52px 0 0}
+  .panel-sheet{padding-bottom:4px}
   body.map-open #map-stats{font-size:16px}
   body.map-open #map-pin{padding-bottom:0}
+  body.map-open #panel-viewport{padding-right:0}
 }
 @media (prefers-reduced-motion: reduce){
   #panel-viewport{overflow:auto}
