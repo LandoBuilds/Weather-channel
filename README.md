@@ -12,16 +12,16 @@ Cedar Park is the station that comes up first. Austin shows on the Cedar Park re
 2. Tap the **Share** button, then **Add to Home Screen**.
 3. The name should already read **Lando WX**. Tap **Add**.
 4. Launch **Lando WX** from the Home Screen. It opens full screen on the kiosk.
-5. Tap the forecast once. Safari will not start the music until you do. The bumper says “tap anywhere for sound.”
+5. Tap once when you see **TAP FOR MUSIC**. Safari will not start the music until you do. That tap is remembered by the kiosk page, so the music keeps playing when the city changes.
 
-`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes.
+`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off.
 
 ## AirPlay it to an Apple TV
 
 1. Open the **Lando WX** Home Screen icon, or the same page in Safari.
 2. Swipe down from the top-right corner to open **Control Center**.
 3. Tap **Screen Mirroring** and choose the Apple TV.
-4. Leave the iPhone or iPad awake (or use Guided Access) so the rotation keeps running. Tap once if the music has not started; mirroring carries that audio to the TV.
+4. Leave the iPhone or iPad awake (or use Guided Access) so the rotation keeps running. Tap **TAP FOR MUSIC** once if it has not started. The song keeps going across city changes, and Screen Mirroring carries that audio to the TV.
 
 ## Where to customize
 
