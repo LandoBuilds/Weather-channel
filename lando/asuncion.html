@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Asuncion - Lando Weather Channel</title>
+<title>Asuncion - Lando's Weather Lounge</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 @font-face{font-family:Star4000;src:url(fonts/Star4000.woff) format('woff')}
@@ -31,7 +31,7 @@ const q = new URLSearchParams(location.search);
 const lat = q.get('lat') || -25.2637;
 const lon = q.get('lon') || -57.5759;
 if (q.get('name')) document.getElementById('nm').firstChild.textContent = q.get('name');
-document.getElementById('tt').textContent = q.get('ticker') || 'Welcome to the Lando Weather Channel ... Local on the 8s';
+document.getElementById('tt').textContent = q.get('ticker') || "Welcome to Lando's Weather Lounge ... On the 8s";
 function fit() {
   const s = Math.min(innerWidth / 640, innerHeight / 480);
   document.getElementById('s').style.transform = `translate(-50%,-50%) scale(${s})`;

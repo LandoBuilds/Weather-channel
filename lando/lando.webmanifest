@@ -1,6 +1,6 @@
 {
-  "name": "Lando Weather Channel",
-  "short_name": "Lando WX",
+  "name": "Lando's Weather Lounge",
+  "short_name": "Weather Lounge",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
