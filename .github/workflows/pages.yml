@@ -1,0 +1,69 @@
+name: Pages
+
+# Build the static WeatherStar dist, wrap it in the Lando kiosk, and publish
+# to GitHub Pages on every push to main. Pull requests build the same site
+# so the check can go green before merge; they do not deploy.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: vendor/ws4kp/package-lock.json
+
+      - name: Build WeatherStar 4000+ static dist
+        working-directory: vendor/ws4kp
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble the Lando Weather Channel site
+        run: ./scripts/assemble-site.sh
+
+      - name: Upload GitHub Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          # Best effort. The default GITHUB_TOKEN cannot create a Pages site
+          # (that needs administration:write, which the token is not allowed
+          # to hold). When this step fails, enable Pages once in the repo
+          # settings — see README — and re-run the workflow.
+          enablement: true
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

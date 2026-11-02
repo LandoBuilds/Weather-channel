@@ -1,0 +1,101 @@
+import Setting from './utils/setting.mjs';
+import { reset as resetScroll, addScreen as addScroll, hazards } from './currentweatherscroll.mjs';
+import { escapeHtml } from './utils/string.mjs';
+
+let firstRun = true;
+
+// change of enable handler
+const changeEnable = (newValue) => {
+	if (firstRun) return;
+	let newDisplay;
+	if (newValue) {
+		// add the text to the scroll
+		parseText(customText.value);
+		// show the string box using the stylesheet's layout
+		newDisplay = '';
+	} else {
+		// set scroll back to original
+		resetScroll();
+		// hide the string entry
+		newDisplay = 'none';
+	}
+	const stringEntry = customText.element;
+	if (stringEntry) {
+		stringEntry.style.display = newDisplay;
+	}
+};
+
+// parse the text provided
+const parseText = (textInput) => {
+	// skip updating text on first run
+	if (firstRun) return;
+
+	// test validity
+	if (textInput === undefined || textInput === '') {
+		resetScroll();
+		return;
+	}
+
+	// split the text at pipe characters
+	// the scroll draws its text as html, and this text can arrive in a shared link, so it is escaped
+	const texts = textInput.split('|').map(escapeHtml);
+
+	// add single text scroll after hazards if present
+	resetScroll();
+	addScroll(hazards);
+	addScroll(
+		() => {
+			// pick a random string from the available list
+			const randInt = Math.floor(Math.random() * texts.length);
+			return {
+				type: 'scroll',
+				text: texts[randInt],
+			};
+		},
+		// keep the existing scroll
+		true,
+	);
+};
+
+// change the text
+const changeText = (newValue) => {
+	// first pass through won't have custom text enable ready
+	if (firstRun) return;
+
+	if (customTextEnable.value) {
+		parseText(newValue);
+	}
+};
+
+const customText = new Setting('customText', {
+	name: 'Custom Text',
+	defaultValue: '',
+	type: 'string',
+	changeAction: changeText,
+	placeholder: 'Text to scroll',
+});
+
+const customTextEnable = new Setting('customTextEnable', {
+	name: 'Enable Custom Text',
+	defaultValue: false,
+	changeAction: changeEnable,
+});
+
+// initialize the custom text inputs on the page
+const init = () => {
+	// add the controls to the page
+	const settingsSection = document.querySelector('#settings');
+	settingsSection.append(customTextEnable.generate(), customText.generate());
+	// clear the first run value
+	firstRun = false;
+	// call change enable with the current value to show/hide the url box
+	changeEnable(customTextEnable.value);
+};
+
+// currentweatherscroll.mjs waits for the station data at the top level, which holds up this module
+// until after DOMContentLoaded has usually fired
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', init);
+} else {
+	init();
+}

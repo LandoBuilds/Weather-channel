@@ -1,0 +1,564 @@
+// base weather display class
+
+import STATUS, { calcStatusClass, statusClasses } from './status.mjs';
+import { DateTime } from '../vendor/auto/luxon.mjs';
+import {
+	msg, displayNavMessage, isPlaying, updateStatus, showDisplay, isLocationActive,
+} from './navigation.mjs';
+import { parseQueryString } from './utils/setting.mjs';
+import settings from './settings.mjs';
+import elemForEach from './utils/elem-for-each.mjs';
+import {
+	logNavStart, logBaseCountTick, logScreenTransition, logNavSummary,
+} from './utils/debug.mjs';
+import { timeZone } from './location.mjs';
+
+let drawStartedAt = null;
+
+// one clock for every display: it updates the display that drew last, while that display is on screen
+let clockDisplay = null;
+let clockInterval = null;
+const clockTick = () => {
+	if (clockDisplay?.active) clockDisplay.drawCurrentDateTime();
+};
+
+class WeatherDisplay {
+	constructor(navId, elemId, name, defaultEnabled) {
+		// navId is used in messaging and sort order
+		this.navId = navId;
+		this.elemId = elemId;
+		this.data = undefined;
+		this.loadingStatus = STATUS.loading;
+		this.name = name ?? elemId;
+		this.getDataCallbacks = [];
+		this.stillWaitingCallbacks = [];
+		this.defaultEnabled = defaultEnabled;
+		this.okToDrawCurrentConditions = true;
+		this.okToDrawCurrentDateTime = true;
+		this.showOnProgress = true;
+		this.autoRefreshHandle = null;
+		this.drawStartedAt = null;
+
+		// default navigation timing
+		this.timing = {
+			totalScreens: 1,
+			baseDelay: 9000, // 9 seconds
+			delay: 1, // 1*1second = 1 second total display time
+		};
+		this.navBaseCount = 0;
+		this.screenIndex = -1;	// special starting condition
+
+		if (this.isEnabled) {
+			this.setStatus(STATUS.loading);
+		} else {
+			this.setStatus(STATUS.disabled);
+		}
+		this.startNavCount();
+
+		// get any templates
+		document.addEventListener('DOMContentLoaded', () => {
+			this.loadTemplates();
+		});
+	}
+
+	generateCheckbox(defaultEnabled = true) {
+		// no checkbox if progress
+		if (this.elemId === 'progress') return false;
+
+		// get url provided state, and fall back to the older suffix naming convention
+		const queryString = parseQueryString();
+		const urlValue = queryString?.[this.elemId] ?? queryString?.[`${this.elemId}-checkbox`];
+		let urlState;
+		if (urlValue !== undefined) {
+			urlState = urlValue === 'true';
+		}
+
+		// get the saved status of the checkbox, but defer to a value set in the url
+		let savedStatus = urlState ?? window.localStorage.getItem(`display-enabled: ${this.elemId}`);
+		if (savedStatus === null) savedStatus = defaultEnabled;
+		this.isEnabled = !!((savedStatus === 'true' || savedStatus === true));
+
+		// refresh (or initially store the state of the checkbox)
+		window.localStorage.setItem(`display-enabled: ${this.elemId}`, this.isEnabled);
+
+		// create a checkbox in the selected displays area
+		const label = document.createElement('label');
+		label.htmlFor = `${this.elemId}-checkbox`;
+		label.id = `${this.elemId}-label`;
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.value = true;
+		checkbox.id = `${this.elemId}-checkbox`;
+		checkbox.name = this.elemId;
+		checkbox.checked = this.isEnabled;
+		checkbox.addEventListener('change', (e) => this.checkboxChange(e));
+		const span = document.createElement('span');
+		span.innerHTML = this.name;
+		const alert = document.createElement('span');
+		alert.innerHTML = 'ALERT';
+		alert.classList.add('alert');
+
+		label.append(checkbox, span, alert);
+		label.addEventListener('click', (e) => this.labelClick(e));
+
+		this.checkbox = label;
+
+		return label;
+	}
+
+	// clicking the name or status of a ready display shows it, the checkbox still turns it on or off
+	labelClick(e) {
+		if (e.target.type === 'checkbox' || this.status !== STATUS.loaded) return;
+		// don't toggle the checkbox
+		e.preventDefault();
+		showDisplay(this);
+		document.querySelector('#divTwc').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	}
+
+	checkboxChange(e) {
+		// update the state
+		this.isEnabled = e.target.checked;
+		// store the value for the next load
+		window.localStorage.setItem(`display-enabled: ${this.elemId}`, this.isEnabled);
+		// without a location there is nothing to load, the choice is used once one is entered
+		if (!isLocationActive()) return;
+		// calling get data will update the status and actually get the data if we're set to enabled
+		this.getData();
+	}
+
+	// return to the state before a location was entered, used by the reset button
+	reset() {
+		this.clearAutoReload();
+		this.data = undefined;
+		this.status = STATUS.loading;
+		this.checkbox?.classList.remove(...statusClasses);
+		this.hideCanvas();
+	}
+
+	// set data status and send update to navigation module
+	setStatus(value) {
+		this.status = value;
+		updateStatus({
+			id: this.navId,
+			status: this.status,
+		});
+
+		// update coloring of checkbox at bottom of page
+		// a request that finishes after the reset button must not color the list again
+		if (!this.checkbox || !isLocationActive()) return;
+		this.checkbox.classList.remove(...statusClasses);
+		this.checkbox.classList.add(calcStatusClass(value));
+	}
+
+	get status() {
+		return this.loadingStatus;
+	}
+
+	set status(state) {
+		this.loadingStatus = state;
+	}
+
+	// get necessary data for this display
+	getData(weatherParameters, refresh) {
+		// refresh doesn't delete existing data, and is reused if the silent refresh fails
+		if (!refresh) {
+			this.data = undefined;
+			// clear any refresh timers
+			this.clearAutoReload();
+		}
+
+		// store weatherParameters locally in case we need them later
+		if (weatherParameters) this.weatherParameters = weatherParameters;
+
+		// set status
+		if (this.isEnabled) {
+			this.setStatus(STATUS.loading);
+		} else {
+			this.setStatus(STATUS.disabled);
+			// returns false when disabled; displays that publish data to other modules should continue fetching anyway
+			return false;
+		}
+
+		// set up auto reload if necessary
+		this.setAutoReload();
+
+		// recalculate navigation timing (in case it was modified in the constructor)
+		this.calcNavTiming();
+		return true;
+	}
+
+	// return any data requested before it was available
+	getDataCallback() {
+		// call each callback
+		this.getDataCallbacks.forEach((fxn) => fxn(this.data));
+		// clear the callbacks
+		this.getDataCallbacks = [];
+	}
+
+	// make data available outside this class
+	// resolves right away if the data is here, otherwise when it arrives (undefined if loading fails)
+	dataReady(stillWaiting) {
+		if (this.data) return Promise.resolve(this.data);
+		if (this.status === STATUS.failed || this.status === STATUS.noData) return Promise.resolve(null);
+		if (stillWaiting) this.stillWaitingCallbacks.push(stillWaiting);
+		return new Promise((resolve) => {
+			this.getDataCallbacks.push(resolve);
+		});
+	}
+
+	drawCanvas() {
+		// clean up the first-run flag in screen index
+		if (this.screenIndex < 0) this.screenIndex = 0;
+		if (this.okToDrawCurrentDateTime) this.drawCurrentDateTime();
+		if (this.okToDrawCurrentConditions) {
+			window.dispatchEvent(new CustomEvent('current-weather-scroll', { detail: 'start' }));
+		} else {
+			window.dispatchEvent(new CustomEvent('current-weather-scroll', { detail: 'non-display' }));
+			window.dispatchEvent(new CustomEvent('current-weather-scroll', { detail: 'hide' }));
+		}
+		WeatherDisplay.sendRenderStart();
+	}
+
+	finishDraw() {
+		// draw date and time
+		if (this.okToDrawCurrentDateTime) {
+			this.drawCurrentDateTime();
+			// hand the shared clock to this display, the clock is started by the first display to draw
+			clockDisplay = this;
+			if (!clockInterval) clockInterval = setInterval(clockTick, 100);
+		}
+		WeatherDisplay.sendRenderEnd();
+	}
+
+	drawCurrentDateTime() {
+		// Get the current date and time.
+		const now = DateTime.local().setZone(timeZone());
+
+		// time = "11:35:08 PM";
+		const time = now.toLocaleString(DateTime.TIME_WITH_SECONDS).padStart(11, ' ');
+		const date = now.toFormat(' ccc LLL ') + now.day.toString().padStart(2, ' ');
+
+		const dateElem = this.elem.querySelector('.date-time.date');
+		const timeElem = this.elem.querySelector('.date-time.time');
+
+		if (timeElem && this.lastTime !== time) {
+			timeElem.innerHTML = time.toUpperCase();
+		}
+		this.lastTime = time;
+
+		if (dateElem && this.lastDate !== date) {
+			dateElem.innerHTML = date.toUpperCase();
+		}
+		this.lastDate = date;
+	}
+
+	// show/hide the canvas and start/stop the navigation timer
+	showCanvas(navCmd) {
+		// reset timing if enabled
+		// if a nav command is present call it to set the screen index
+		if (navCmd === msg.command.firstFrame) this.navNext(navCmd);
+		if (navCmd === msg.command.lastFrame) this.navPrev(navCmd);
+
+		// if total screens was zero our work is done, the above commands will skip to the next screen
+		if (this.timing.totalScreens === 0) return;
+
+		this.startNavCount();
+
+		this.elem.classList.add('show');
+		document.querySelector('#divTwc').classList.add(this.elemId);
+	}
+
+	// a display can be shown on request from the display list when it has something to show
+	canShowOnRequest() {
+		return this.timing.totalScreens > 0;
+	}
+
+	// hook for displays that skip content during play but should show it on request
+	// eslint-disable-next-line class-methods-use-this
+	prepareShowOnRequest() { }
+
+	hideCanvas() {
+		this.resetNavBaseCount();
+		if (this.elem.classList.contains('show')) {
+			WeatherDisplay.sendRenderStart();
+		}
+		this.elem.classList.remove('show');
+		// used to change backgrounds for widescreen
+		document.querySelector('#divTwc').classList.remove(this.elemId);
+	}
+
+	get active() {
+		return this.elem?.offsetHeight !== undefined && this.elem.offsetHeight !== 0;
+	}
+
+	get enabled() {
+		return this.isEnabled;
+	}
+
+	// navigation timings
+	// totalScreens = total number of screens that are available
+	// baseDelay = ms to delay before re-evaluating screenIndex
+	// delay: three options
+	//	integer = each screen will display for this number of baseDelays
+	//	[integer, integer, ...] = screenIndex 0 displays for integer[0]*baseDelay, etc.
+	//	[{time, si}, ...] = time as above, si is specific screen index to display during this interval
+	//	if the array forms are used totalScreens is overwritten by the size of the array
+	navBaseTime() {
+		// see if play is active and screen is active
+		if (!isPlaying() || !this.active) return;
+		// increment the base count
+		this.navBaseCount += 1;
+		logBaseCountTick(this);
+
+		// call base count change if available for this function
+		if (this.baseCountChange) this.baseCountChange(this.navBaseCount);
+
+		// handle base count/screen index changes
+		this.updateScreenFromBaseCount();
+	}
+
+	async updateScreenFromBaseCount() {
+		// get the next screen index
+		const nextScreenIndex = this.screenIndexFromBaseCount();
+
+		// special cases for first and last frame
+		// must compare with false as nextScreenIndex could be 0 which is valid
+		if (nextScreenIndex === false) {
+			this.sendNavDisplayMessage(msg.response.next);
+			return;
+		}
+
+		// test for no change and exit early
+		if (nextScreenIndex === this.screenIndex) return;
+
+		// before screenIndex changes, the log reports how long the screen being left was shown
+		logScreenTransition(this, nextScreenIndex, settings.speed?.value);
+
+		// test for -1 (no screen displayed yet)
+		this.screenIndex = nextScreenIndex === -1 ? 0 : nextScreenIndex;
+
+		// Optional hook. Defining this REPLACES the automatic drawCanvas() call on screen
+		// transitions - implementors are responsible for drawing (typically from showCanvas).
+		if (this.screenIndexChange) {
+			this.screenIndexChange();
+		} else {
+			await this.drawCanvas();
+		}
+		this.showCanvas();
+	}
+
+	// Optional hook, called on every base count tick while this display is active.
+	// eslint-disable-next-line class-methods-use-this
+	baseCountChange() {
+		return false;
+	}
+
+	// take the three timing formats shown above and break them into arrays for consistent usage in navigation functions
+	// this.timing.fullDelay = [end of screen index 0 in base counts, end of screen index 1...]
+	// this.timing.screenIndexes = [screen index to use during this.timing.fullDelay[0], screen index to use during this.timing.fullDelay[1], ...]
+	calcNavTiming() {
+		if (this.timing === false) return;
+		// update total screens
+		if (Array.isArray(this.timing.delay)) this.timing.totalScreens = this.timing.delay.length;
+
+		// if the delay is provided as a single value, expand it to a series of the same value
+		let intermediateDelay = [];
+		if (typeof this.timing.delay === 'number') {
+			for (let i = 0; i < this.timing.totalScreens; i += 1) intermediateDelay.push(this.timing.delay);
+		} else {
+			// map just the delays to the intermediate block
+			intermediateDelay = this.timing.delay.map((delay) => {
+				if (typeof delay === 'object') return delay.time;
+				return delay;
+			});
+		}
+
+		// calculate the cumulative end point of each delay
+		let sum = 0;
+		this.timing.fullDelay = intermediateDelay.map((val) => {
+			const calc = sum + val;
+			sum += val;
+			return calc;
+		});
+
+		// generate a list of screen either sequentially if not provided in an object or from the object
+		if (Array.isArray(this.timing.delay) && typeof this.timing.delay[0] === 'object') {
+			// extract screen indexes from objects
+			this.timing.screenIndexes = this.timing.delay.map((delay) => delay.si);
+		} else {
+			// generate sequential screen indexes
+			this.timing.screenIndexes = [];
+			for (let i = 0; i < this.timing.totalScreens; i += 1) this.timing.screenIndexes.push(i);
+		}
+	}
+
+	// keep showing the same screen after the timing changes (such as on a change of display mode)
+	// roll back a screen index that is now past the end, and re-sync the base count to the start of
+	// that screen so the new timing array picks up where the old one left off instead of jumping
+	resyncScreenIndex() {
+		const { totalScreens, fullDelay } = this.timing;
+		if (this.screenIndex >= totalScreens) this.screenIndex = totalScreens - 1;
+		this.navBaseCount = this.screenIndex <= 0 ? 0 : fullDelay[this.screenIndex - 1];
+	}
+
+	// navigate to next screen
+	navNext(command) {
+		// check for special 'first frame' command
+		if (command === msg.command.firstFrame) {
+			this.resetNavBaseCount();
+		} else {
+			// set the base count to the next available frame
+			const newBaseCount = this.timing.fullDelay.find((delay) => delay > this.navBaseCount);
+			this.navBaseCount = newBaseCount;
+		}
+		this.updateScreenFromBaseCount();
+	}
+
+	// navigate to previous screen
+	navPrev(command) {
+		// check for special 'last frame' command
+		if (command === msg.command.lastFrame) {
+			this.navBaseCount = this.timing.fullDelay[this.timing.totalScreens - 1] - 1;
+		} else {
+			// find the highest fullDelay that is less than the current base count
+			const newBaseCount = this.timing.fullDelay.reduce((acc, delay) => {
+				if (delay < this.navBaseCount) return delay;
+				return acc;
+			}, 0);
+			// if the new base count is zero then we're already at the first screen
+			if (newBaseCount === 0 && this.navBaseCount === 0) {
+				this.sendNavDisplayMessage(msg.response.previous);
+				return;
+			}
+			this.navBaseCount = newBaseCount;
+		}
+		this.updateScreenFromBaseCount();
+	}
+
+	// get the screen index for the current base count, returns false if past end of timing array (go to next screen, stop timing)
+	screenIndexFromBaseCount() {
+		// test for timing enabled
+		if (!this.timing) return 0;
+		if (this.timing.totalScreens === 0) return false;
+		// find the first timing in the timing array that is greater than the base count
+		if (this.timing && !this.timing.fullDelay) this.calcNavTiming();
+		const timingIndex = this.timing.fullDelay.findIndex((delay) => delay > this.navBaseCount);
+		if (timingIndex === -1) return false;
+		return this.timing.screenIndexes[timingIndex];
+	}
+
+	// start and stop base counter
+	startNavCount() {
+		if (!this.navInterval) {
+			logNavStart(this, settings.speed?.value);
+			this.navInterval = setInterval(() => this.navBaseTime(), this.timing.baseDelay * settings.speed.value);
+		}
+	}
+
+	resetNavBaseCount() {
+		logNavSummary(this);
+
+		this.navBaseCount = 0;
+		this.screenIndex = -1;
+		// reset the timing so we don't short-change the first screen
+		if (this.navInterval) {
+			clearInterval(this.navInterval);
+			this.navInterval = undefined;
+		}
+	}
+
+	sendNavDisplayMessage(message) {
+		displayNavMessage({
+			id: this.navId,
+			type: message,
+		});
+	}
+
+	loadTemplates() {
+		this.templates = {};
+		this.elem = document.querySelector(`#${this.elemId}-html`);
+		if (!this.elem) return;
+		elemForEach(`#${this.elemId}-html .template`, (template) => {
+			const className = template.classList[0];
+			const node = template.cloneNode(true);
+			node.classList.remove('template');
+			this.templates[className] = node;
+			template.remove();
+		});
+	}
+
+	fillTemplate(name, fillValues) {
+		// get the template
+		const templateNode = this.templates[name];
+		if (!templateNode) return false;
+
+		// clone it
+		const template = templateNode.cloneNode(true);
+
+		Object.entries(fillValues).forEach(([key, value]) => {
+			// get the specified element
+			const elem = template.querySelector(`.${key}`);
+			if (!elem) return;
+
+			// fill based on type provided
+			if (typeof value === 'string' || typeof value === 'number') {
+				// string and number fill the first found selector
+				elem.innerHTML = value;
+			} else if (value?.type === 'img') {
+				// fill the image source
+				elem.querySelector('img').src = value.src;
+			} else if (value?.type === 'canvas') {
+				elem.append(value.canvas);
+			}
+		});
+
+		return template;
+	}
+
+	// stub hood
+	// displays that need to load additional data or re-layout their screens
+	// should implement this hook to allow clean, no refresh switching between enhanced and non-enhanced modes
+	// eslint-disable-next-line class-methods-use-this
+	modeChanged() { }
+
+	// still waiting for data (retries triggered)
+	stillWaiting() {
+		if (this.isEnabled) this.setStatus(STATUS.retrying);
+		// handle still waiting callbacks
+		this.stillWaitingCallbacks.forEach((callback) => callback());
+		this.stillWaitingCallbacks = [];
+	}
+
+	clearAutoReload() {
+		clearInterval(this.autoRefreshHandle);
+		this.autoRefreshHandle = null;
+	}
+
+	setAutoReload() {
+		// refresh time can be forced by the user (for hazards)
+		const refreshTime = this.refreshTime ?? settings.refreshTime.value;
+		this.autoRefreshHandle = this.autoRefreshHandle ?? setInterval(() => this.getData(this.weatherParameters, true), refreshTime);
+	}
+
+	// these hooks work with ws4channels to suppress grabbing a frame mid-change
+	static sendRenderStart() {
+		if (!drawStartedAt) {
+			drawStartedAt = Date.now();
+		}
+		document.dispatchEvent(new Event('ws4kp-render-start'));
+	}
+
+	static sendRenderEnd() {
+		requestAnimationFrame(() => requestAnimationFrame(() => {
+			document.dispatchEvent(new CustomEvent('ws4kp-render-end', {
+				detail: {
+					startedAt: drawStartedAt,
+					endedAt: Date.now(),
+				},
+			}));
+			drawStartedAt = null;
+		}));
+	}
+}
+
+export default WeatherDisplay;

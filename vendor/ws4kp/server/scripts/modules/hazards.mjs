@@ -1,0 +1,212 @@
+// hazards (alerts, warnings, etc)
+
+import STATUS from './status.mjs';
+import { safeJson } from './utils/fetch.mjs';
+import ScrollWeatherDisplay from './scroll-weather-display.mjs';
+import { registerDisplay } from './navigation.mjs';
+import { debugFlag } from './utils/debug.mjs';
+
+const hazardLevels = {
+	Extreme: 10,
+	Severe: 5,
+};
+
+const hazardModifiers = {
+	'Hurricane Warning': 2,
+	'Tornado Warning': 3,
+	'Severe Thunderstorm Warning': 1,
+};
+
+// A cheap, stable signature of the content about to be rendered. Alert ids alone are not enough:
+// an alert can be reissued under the same id with updated text, which changes the rendered height.
+const rowsSignature = (alerts) => alerts.map((alert) => `${alert.id}|${alert.properties.event}|${alert.properties.description ?? ''}`).join('\u0000');
+
+class Hazards extends ScrollWeatherDisplay {
+	constructor(navId, elemId, defaultActive) {
+		// special height and width for scrolling
+		super(navId, elemId, 'Hazards', defaultActive, {
+			linesSelector: '.hazard-lines',
+			scrollTiming: {
+				finalPause: 2.0, // shorter final pause for hazards
+			},
+		});
+		this.showOnProgress = false;
+		this.okToDrawCurrentConditions = false;
+
+		// force a 1-minute refresh time for the most up-to-date hazards
+		this.refreshTime = 60_000;
+
+		// 0 screens skips this during "play"
+		this.timing.totalScreens = 0;
+
+		// take note of the already-shown alert ids
+		this.viewedAlerts = new Set();
+		this.viewedGetCount = 0;
+
+		// true while replaying all alerts after a click in the display list
+		this.replaying = false;
+	}
+
+	async getData(weatherParameters, refresh) {
+		// super checks for enabled
+		const superResult = super.getData(weatherParameters, refresh);
+		// hazards performs a silent refresh, but does not fall back to a previous fetch if no data is available
+		// this is intentional to ensure the latest alerts only are displayed.
+
+		// auto reload must be set up specifically for hazards in case it is disabled via checkbox (for the bottom line scroll)
+		if (this.autoRefreshHandle === null) this.setAutoReload();
+
+		try {
+			const alert = this.checkbox.querySelector('.alert');
+			alert.classList.remove('show');
+
+			// if not a refresh (new site), all alerts are new
+			if (!refresh) {
+				this.viewedGetCount = 0;
+				this.viewedAlerts.clear();
+				this.replaying = false;
+			}
+
+			// get the forecast using centralized safe handling
+			const url = new URL('https://api.weather.gov/alerts/active');
+			url.searchParams.append('point', `${this.weatherParameters.latitude},${this.weatherParameters.longitude}`);
+			url.searchParams.append('status', 'actual');
+			const alerts = await safeJson(url, { retryCount: 3, stillWaiting: () => this.stillWaiting() });
+
+			if (!alerts) {
+				if (debugFlag('verbose-failures')) {
+					console.warn('Active Alerts request failed; assuming no active alerts');
+				}
+				this.data = [];
+			} else {
+				const allUnsortedAlerts = alerts.features ?? [];
+				const hasImmediate = allUnsortedAlerts.some((hazard) => hazard.properties.urgency === 'Immediate');
+				const sortedAlerts = allUnsortedAlerts.sort((a, b) => (calcSeverity(b.properties.severity, b.properties.event)) - (calcSeverity(a.properties.severity, a.properties.event)));
+				const filteredAlerts = sortedAlerts.filter((hazard) => hazard.properties.severity !== 'Unknown' && (!hasImmediate || (hazard.properties.urgency === 'Immediate')));
+				this.data = filteredAlerts.slice(0, 5);
+			}
+
+			// every 10 times through the get process (10 minutes), reset the viewed messages
+			if (this.viewedGetCount >= 10) {
+				this.viewedGetCount = 0;
+				this.viewedAlerts.clear();
+			}
+			this.viewedGetCount += 1;
+
+			// count up un-viewed alerts
+			const unViewed = this.data.reduce((count, hazard) => {
+				if (!this.viewedAlerts.has(hazard.id)) return count + 1;
+				return count;
+			}, 0);
+
+			// show alert indicator
+			if (unViewed > 0) alert.classList.add('show');
+		} catch (error) {
+			console.error(`Unexpected Active Alerts error: ${error.message}`);
+			if (this.isEnabled) this.setStatus(STATUS.failed);
+			// release anyone waiting, they get the data from the last successful load (undefined if there isn't any)
+			this.getDataCallback();
+			return;
+		}
+
+		this.getDataCallback();
+
+		if (!superResult) {
+			// Don't override status - super.getData() already set it to STATUS.disabled
+			return;
+		}
+		this.drawLongCanvas();
+		this.setStatus(STATUS.loaded);
+	}
+
+	// also clear the alert indicator in the display list
+	reset() {
+		super.reset();
+		this.checkbox?.querySelector('.alert')?.classList.remove('show');
+	}
+
+	// alerts that have already been scrolled through are not shown again until the next reset
+	// except when replaying on request, which shows them all
+	scrollRows() {
+		if (this.replaying) return this.data;
+		return this.data.filter((data) => !this.viewedAlerts.has(data.id));
+	}
+
+	// hazards can be replayed from the display list even after they have scrolled through once
+	canShowOnRequest() {
+		return this.data?.some((alert) => alert.properties.description) ?? false;
+	}
+
+	prepareShowOnRequest() {
+		this.replaying = true;
+		// force a rebuild so the scroll starts from the top with every alert
+		this.lastContentSignature = null;
+		this.drawLongCanvas();
+	}
+
+	// leaving a replay part way through ends it, so it does not come back around during play
+	hideCanvas() {
+		if (this.replaying && this.active) this.endViewing();
+		super.hideCanvas();
+	}
+
+	// take this out of the rotation until the next reset and note the ids shown
+	endViewing() {
+		this.replaying = false;
+		this.timing.totalScreens = 0;
+		this?.data?.forEach((alert) => this.viewedAlerts.add(alert.id));
+	}
+
+	// Alert ids alone are not enough: an alert can be reissued under the same id with updated
+	// text, which changes the rendered height. Hazards refresh every 60 seconds but a long
+	// multi-alert scroll can run for several minutes, so rebuilding on every refresh would
+	// restart it from the top and it would never reach the end.
+	// eslint-disable-next-line class-methods-use-this
+	contentSignature(alerts) {
+		return rowsSignature(alerts);
+	}
+
+	buildRow(data) {
+		// protect against a null description
+		if (!data.properties.description) return false;
+		const fillValues = {};
+		const description = data.properties.description
+			.replaceAll('\n\n', '<br/><br/>')
+			.replaceAll('\n', ' ')
+			.replace(/(\S)\.\.\.(\S)/g, '$1... $2'); // Add space after ... when surrounded by non-whitespace to improve text-wrappability
+
+		fillValues['hazard-text'] = `${data.properties.event}<br/><br/>${description}<br/><br/><br/><br/>`; // Add some padding to scroll off the bottom a bit
+
+		return this.fillTemplate('hazard', fillValues);
+	}
+
+	// after we roll through the hazards once, don't display again until the next refresh (10 minutes)
+	screenIndexFromBaseCount() {
+		const superValue = super.screenIndexFromBaseCount();
+		// false is returned when we reach the end of the scroll
+		if (superValue === false) this.endViewing();
+		// return the value as expected
+		return superValue;
+	}
+
+	// make data available outside this class
+	// promise allows for data to be requested before it is available
+	async getHazards(stillWaiting) {
+		return this.dataReady(stillWaiting);
+	}
+}
+
+const calcSeverity = (severity, event) => {
+	// base severity plus some modifiers for specific types of warnings
+	const baseSeverity = hazardLevels[severity] ?? 0;
+	const modifiedSeverity = hazardModifiers[event] ?? 0;
+	return baseSeverity + modifiedSeverity;
+};
+
+// register display
+const display = new Hazards(0, 'hazards', true);
+registerDisplay(display);
+
+const getHazards = display.getHazards.bind(display);
+
+export default getHazards;

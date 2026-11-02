@@ -1,0 +1,331 @@
+import { locationCleanup } from './utils/string.mjs';
+import getCurrentWeather from './currentweather.mjs';
+import { currentDisplay } from './navigation.mjs';
+import getHazards from './hazards.mjs';
+import settings from './settings.mjs';
+import { StationInfo } from './utils/data-loader.mjs';
+
+// constants
+const degree = String.fromCharCode(176);
+const SCROLL_SPEED = 100; // pixels/second
+const TICK_INTERVAL_MS = 500; // milliseconds per tick
+const secondsToTicks = (seconds) => Math.ceil((seconds * 1000) / TICK_INTERVAL_MS);
+const DEFAULT_UPDATE = secondsToTicks(4.0); // 4 second default for each current conditions
+
+// items on page
+let mainScroll;
+let fixedScroll;
+let header;
+document.addEventListener('DOMContentLoaded', () => {
+	mainScroll = document.querySelector('#container>.scroll');
+	fixedScroll = document.querySelector('#container>.scroll .fixed');
+	header = document.querySelector('#container>.scroll .scroll-header');
+});
+
+// local variables
+let interval;
+let screenIndex = 0;
+let sinceLastUpdate = 0;
+let nextUpdate = DEFAULT_UPDATE;
+let resetFlag;
+let defaultScreensLoaded = true;
+
+// start drawing conditions
+// reset starts from the first item in the text scroll list
+const start = () => {
+	// show the block
+	show();
+	// if already started, draw the screen on a reset flag and return
+	if (interval) {
+		if (resetFlag) drawScreen();
+		resetFlag = false;
+		return;
+	}
+	resetFlag = false;
+	// set up the interval if needed
+	if (!interval) {
+		interval = setInterval(incrementInterval, TICK_INTERVAL_MS);
+	}
+
+	// draw the data
+	drawScreen();
+};
+
+const stop = (reset) => {
+	if (reset) {
+		screenIndex = 0;
+		resetFlag = true;
+	}
+};
+
+// increment interval, roll over
+// forcing is used when drawScreen receives an invalid screen and needs to request the next one in line
+const incrementInterval = (force) => {
+	if (!force) {
+		// test for elapsed time (0.5s ticks);
+		sinceLastUpdate += 1;
+		if (sinceLastUpdate < nextUpdate) return;
+	}
+	// reset flags
+	sinceLastUpdate = 0;
+	nextUpdate = DEFAULT_UPDATE;
+
+	// test current screen
+	const display = currentDisplay();
+	if (!display?.okToDrawCurrentConditions) {
+		stop(display?.elemId === 'progress');
+		hide();
+		return;
+	}
+	screenIndex = (screenIndex + 1) % (workingScreens.length);
+
+	// draw new text
+	drawScreen();
+};
+
+const drawScreen = async () => {
+	// get the conditions
+	const { data, parameters } = await getCurrentWeather();
+
+	// create a data object (empty if no valid current weather conditions)
+	const scrollData = data || {};
+
+	// add the hazards if on screen 0
+	if (screenIndex === 0) {
+		const hazardsData = await getHazards();
+		if (hazardsData && hazardsData.length > 0) {
+			scrollData.hazards = hazardsData;
+		}
+	}
+
+	// if we have no current weather and no hazards, there's nothing to display
+	if (!data && (!scrollData.hazards || scrollData.hazards.length === 0)) {
+		drawCondition('No local observations available');
+		return;
+	}
+
+	const thisScreen = await workingScreens[screenIndex](scrollData, parameters);
+
+	// update classes on the scroll area
+	Array.from(mainScroll.classList).forEach((cls) => {
+		if (cls !== 'scroll') mainScroll.classList.remove(cls);
+	});
+	thisScreen?.classes?.forEach((cls) => mainScroll.classList.add(cls));
+
+	if (typeof thisScreen === 'string') {
+		// only a string
+		drawCondition(thisScreen);
+	} else if (typeof thisScreen === 'object') {
+		// an object was provided with additional parameters
+		switch (thisScreen.type) {
+			case 'scroll':
+				drawScrollCondition(thisScreen);
+				break;
+			default: drawCondition(thisScreen);
+		}
+		// add the header if available
+		if (thisScreen.header) {
+			setHeader(thisScreen.header);
+		} else {
+			setHeader('');
+		}
+	} else {
+		// can't identify screen, get another one
+		incrementInterval(true);
+	}
+};
+
+const hazards = (data) => {
+	// test for data
+	if (!data.hazards || data.hazards.length === 0) return false;
+
+	const hazard = `${data.hazards[0].properties.event} ${data.hazards[0].properties.description}`;
+
+	return {
+		text: hazard,
+		type: 'scroll',
+		classes: ['hazard'],
+		header: data.hazards[0].properties.event,
+	};
+};
+
+// additional screens are stored in a separate for simple clearing/resettings
+let additionalScreens = [];
+// the "screens" are stored in an array for easy addition and removal
+const baseScreens = [
+	// hazards
+	hazards,
+	// station name
+	async (data) => {
+		const location = ((await StationInfo)[data.station.properties.stationIdentifier]?.city ?? locationCleanup(data.station.properties.name)).substring(0, 20);
+		return `Conditions at ${location}`;
+	},
+
+	// temperature
+	(data) => {
+		let text = `Temp: ${data.Temperature}${degree}${data.TemperatureUnit}`;
+		if (data.observations.heatIndex.value) {
+			text += `    Heat Index: ${data.HeatIndex}${degree}${data.TemperatureUnit}`;
+		} else if (data.observations.windChill.value) {
+			text += `    Wind Chill: ${data.WindChill}${degree}${data.TemperatureUnit}`;
+		}
+		return text;
+	},
+
+	// humidity
+	(data) => `Humidity: ${data.Humidity}%   Dewpoint: ${data.DewPoint}${degree}${data.TemperatureUnit}`,
+
+	// barometric pressure
+	(data) => `Barometric Pressure: ${data.Pressure} ${data.PressureDirection}`,
+
+	// wind
+	(data) => {
+		let text = data.WindSpeed > 0
+			? `Wind: ${data.WindDirection} ${data.WindSpeed} ${data.WindUnit}`
+			: 'Wind: Calm';
+
+		if (data.WindGust > 0) {
+			text += `  Gusts to ${data.WindGust}`;
+		}
+		return text;
+	},
+
+	// visibility
+	(data) => {
+		const distance = `${data.Ceiling} ${data.CeilingUnit}`;
+		return `Visib: ${data.Visibility} ${data.VisibilityUnit}  Ceiling: ${data.Ceiling === 0 ? 'Unlimited' : distance}`;
+	},
+];
+
+// working screens are the combination of base screens (when active) and additional screens
+let workingScreens = [...baseScreens, ...additionalScreens];
+
+// internal draw function with preset parameters
+const drawCondition = (text) => {
+	// re-apply the "typing" effect
+	fixedScroll.classList.remove('reveal');
+	fixedScroll.innerHTML = text;
+	// force the reflow of the element
+	// eslint-disable-next-line no-void
+	void fixedScroll.offsetWidth;
+	fixedScroll.classList.add('reveal');
+	setHeader('');
+};
+
+const setHeader = (text) => {
+	header.innerHTML = text ?? '';
+};
+
+// reset the screens back to the original set
+const reset = () => {
+	workingScreens = [...baseScreens];
+	additionalScreens = [];
+	defaultScreensLoaded = true;
+};
+
+// add screen, keepBase keeps the regular weather crawl
+const addScreen = (screen, keepBase = true) => {
+	defaultScreensLoaded = false;
+	additionalScreens.push(screen);
+	workingScreens = [...(keepBase ? baseScreens : []), ...additionalScreens];
+};
+
+const drawScrollCondition = (screen) => {
+	// remove the reveal class
+	fixedScroll.classList.remove('reveal');
+	// create the scroll element
+	const scrollElement = document.createElement('div');
+	scrollElement.classList.add('scroll-area');
+	scrollElement.innerHTML = screen.text;
+	scrollElement.classList.add('reveal');
+
+	// empty and attach the new element
+	fixedScroll.innerHTML = '';
+	fixedScroll.append(scrollElement);
+
+	// start the scroll after the specified delay
+	const startDelayTime = 1.0 * settings.speed.value; // setTimeout delay below
+	setTimeout(() => {
+		// this must be calculated after the delay because the .reveal class collapses width to 0 temporarily
+		scrollElement.classList.remove('reveal');
+		const { scrollWidth, clientWidth } = scrollElement;
+
+		// calculate the scroll distance and set a minimum scroll
+		const scrollDistance = Math.max(scrollWidth - clientWidth, 0);
+		// calculate the scroll time (scaled by global speed setting), minimum 2s (4s when added to start and end delays)
+		const scrollTime = Math.max((scrollDistance / SCROLL_SPEED) * settings.speed.value, 2);
+		// add 1 second pause at the end of the scroll animation
+		const endPauseTime = 1.0;
+		const totalAnimationTime = scrollTime + endPauseTime;
+		// calculate total on-screen time: animation time + start delay + end pause
+		const totalDisplayTime = totalAnimationTime + startDelayTime;
+		nextUpdate = secondsToTicks(totalDisplayTime);
+
+		// update the element with initial position and transition
+		scrollElement.style.transform = 'translateX(0px)';
+		scrollElement.style.transition = `transform ${scrollTime.toFixed(1)}s linear`;
+		scrollElement.style.willChange = 'transform'; // Hint to browser for hardware acceleration
+		scrollElement.style.backfaceVisibility = 'hidden'; // Force hardware acceleration
+		scrollElement.style.perspective = '1000px'; // Enable 3D rendering context
+
+		// change the transform to trigger the scroll
+		scrollElement.style.transform = `translateX(-${scrollDistance.toFixed(0)}px)`;
+	}, startDelayTime * 1000);
+};
+
+const show = () => {
+	mainScroll.style.display = 'block';
+};
+
+const hide = () => {
+	mainScroll.style.display = 'none';
+};
+
+const nonDisplay = () => {
+	if (interval) {
+		clearInterval(interval);
+		interval = null;
+		stop();
+		// if greater than default update (typically long scroll) skip to the next weather screen
+		if (nextUpdate > DEFAULT_UPDATE) {
+			screenIndex = (screenIndex + 1) % (workingScreens.length);
+			sinceLastUpdate = 0;
+			nextUpdate = DEFAULT_UPDATE;
+		}
+	}
+};
+
+const screenCount = () => workingScreens.length;
+const atDefault = () => defaultScreensLoaded;
+
+// other modules control the scroll with a 'current-weather-scroll' event whose detail names the action
+// an event instead of imports, because this module imports displays that import those modules (circular)
+const scrollActions = {
+	start,
+	reload: () => stop(true),
+	'non-display': nonDisplay,
+	show,
+	hide,
+};
+window.addEventListener('current-weather-scroll', (event) => scrollActions[event.detail]?.());
+
+window.CurrentWeatherScroll = {
+	addScreen,
+	reset,
+	start,
+	show,
+	hide,
+	screenCount,
+	atDefault,
+};
+
+export {
+	addScreen,
+	reset,
+	start,
+	show,
+	hide,
+	screenCount,
+	atDefault,
+	hazards,
+};

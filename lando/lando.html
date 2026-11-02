@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lando Weather Channel</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lando WX">
+<link rel="icon" href="lando-icon.png">
+<link rel="apple-touch-icon" href="lando-icon.png">
+<link rel="manifest" href="lando.webmanifest">
+<script src="lando-config.js"></script>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#bump{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#1b1464,#2e4bb8 60%,#c75a12);color:#fff;font:bold 6vw Arial,sans-serif;text-shadow:4px 4px #000;z-index:9;transition:opacity 1s}
+#bump small{font-size:2.6vw;color:#ffb000}
+#tap{font-size:2vw;margin-top:3vh;color:#ddd}
+#crt{pointer-events:none;position:fixed;inset:0;z-index:8;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 12vw rgba(0,0,0,.6)}
+</style>
+</head>
+<body>
+<iframe id="f" title="Local forecast" allow="autoplay; fullscreen"></iframe>
+<div id="crt"></div>
+<div id="bump">THE LANDO<br>WEATHER CHANNEL<small id="bn">LOCAL ON THE 8s</small><div id="tap">tap anywhere for sound</div></div>
+<script>
+const C = window.LANDO;
+const qs = new URLSearchParams(location.search);
+let i = 0;
+const f = document.getElementById('f');
+const b = document.getElementById('bump');
+if (qs.get('crt') === 'false') document.getElementById('crt').remove();
+
+// ws4kp.html is the static WeatherStar page. index.html is this kiosk,
+// so the forecast must not be loaded from index.html (that would nest the bumper).
+function url(s) {
+  if (s.page) {
+    const join = s.page.includes('?') ? '&' : '?';
+    return s.page + join + 'ticker=' + encodeURIComponent(C.ticker);
+  }
+  return 'ws4kp.html?' + C.common + '&customText=' + encodeURIComponent(C.ticker) + '&' + s.query;
+}
+
+function show() {
+  const s = C.stations[i];
+  document.getElementById('bn').textContent = 'NOW: ' + s.name.toUpperCase();
+  b.style.pointerEvents = 'auto';
+  b.style.opacity = 1;
+  setTimeout(() => {
+    f.src = url(s);
+    setTimeout(() => {
+      b.style.opacity = 0;
+      // The faded bumper would otherwise sit over the forecast and swallow the tap
+      // that starts the music (autoplay is blocked until a gesture reaches the page).
+      b.style.pointerEvents = 'none';
+    }, 2500);
+  }, 1200);
+  i = (i + 1) % C.stations.length;
+}
+
+show();
+setInterval(show, (+qs.get('rotate') || C.rotateSeconds) * 1000);
+</script>
+</body>
+</html>

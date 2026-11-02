@@ -1,0 +1,14 @@
+# Lando Weather Channel — where to customize
+
+These files are copied onto the built WeatherStar site by `scripts/assemble-site.sh`. The published root is the kiosk (`index.html`, same file as `lando.html`). The WeatherStar page itself is `ws4kp.html`, which the kiosk loads in an iframe.
+
+- Cities, rotation time, ticker text, and WeatherStar display flags: `lando/lando-config.js`
+- Asuncion screen (Open-Meteo, °F): `lando/asuncion.html`
+- Bumper, CRT overlay, and rotation wrapper: `lando/lando.html`
+  - `?crt=false` turns the overlay off
+  - `?rotate=SECONDS` changes how long each city stays on screen
+- Home Screen name and icon: `lando/lando.webmanifest` and `lando/lando-icon.png`
+- Music: put `.mp3` files directly in `vendor/ws4kp/server/music/` (not in a subfolder) and rebuild. If that folder has no mp3s, the four royalty-free tracks in `server/music/default/` are used.
+- Austin is a travel city in `vendor/ws4kp/datagenerators/output/travelcities.json` and a regional city in `regionalcities.json`. Cedar Park stays the first station in the rotation.
+
+Paths are relative so the site works at `https://landobuilds.github.io/Weather-channel/`.
