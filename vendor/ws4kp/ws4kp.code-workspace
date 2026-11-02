@@ -1,0 +1,130 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"search.exclude": {
+			"**/*.code-search": true,
+			"**/*.css": true,
+			"**/*.min.js": true,
+			"**/bower_components": true,
+			"**/node_modules": true,
+			"**/vendor": true,
+			"dist/**": true,
+			"package-lock.json": true,
+		},
+		"editor.tabSize": 2,
+		"editor.insertSpaces": false, // .eslintrc wants tabs instead of spaces
+		"emmet.includeLanguages": {
+			"ejs": "html",
+		},
+		"[ejs]": {
+			"editor.occurrencesHighlight": "off",
+			"editor.defaultFormatter": "j69.ejs-beautify"
+		},
+		"files.exclude": {},
+		"files.eol": "\n",
+		"files.associations": {
+			"*.ejs": "ejs"
+		},
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "explicit"
+		},
+		// compiles server/styles/scss/ws.scss to server/styles/ws.min.css on save
+		"liveSassCompile.settings.formats": [
+			{
+				"format": "compressed",
+				"extensionName": ".min.css",
+				"savePath": "/server/styles",
+			}
+		],
+		"cSpell.enabled": true,
+		"cSpell.enabledFileTypes": {
+			"markdown": true,
+			"JavaScript": true
+		},
+		"cSpell.ignorePaths": [
+			"**/package-lock.json",
+			"**/node_modules/**",
+			"**/vscode-extension/**",
+			"**/.git/objects/**",
+			".vscode",
+			".vscode-insiders",
+			"**/vendor/auto/**",
+		],
+		"cSpell.words": [
+			"'storm",
+			"AABB",
+			"ampm",
+			"arcgis",
+			"Battaglia",
+			"devbridge",
+			"Dewp",
+			"dtype",
+			"dumpio",
+			"EPSG",
+			"fzra",
+			"geoip",
+			"gifs",
+			"GRIB",
+			"HRRR",
+			"INHXZS",
+			"KORD",
+			"ltrim",
+			"MADIS",
+			"Malek",
+			"mbar",
+			"merc",
+			"mesonet",
+			"metar",
+			"mwood",
+			"ndim",
+			"Noaa",
+			"nosleep",
+			"nshwrs",
+			"ntsra",
+			"nwind",
+			"Pngs",
+			"PRECIP",
+			"raip",
+			"rasn",
+			"relh",
+			"reprojected",
+			"reprojection",
+			"retr",
+			"rtrim",
+			"scttsra",
+			"shra",
+			"shwrs",
+			"sonarjs",
+			"T",
+			"T'storm",
+			"tsra",
+			"Tucsan",
+			"uncaching",
+			"Unmute",
+			"unmuted",
+			"unproject",
+			"unprojected",
+			"uscomp",
+			"Visib",
+			"Waukegan",
+			"Windd",
+			"WSQS",
+			"zakj",
+			"zarr",
+			"zarray"
+		],
+	},
+	"extensions": {
+		"recommendations": [
+			"digitalbrainstem.javascript-ejs-support", // EJS (Embedded JavaScript) template language support
+			"dbaeumer.vscode-eslint", // ESLint JavaScript linting integration
+			"streetsidesoftware.code-spell-checker",
+			"j69.ejs-beautify",
+		]
+	}
+}

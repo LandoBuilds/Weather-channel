@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Asuncion - Lando Weather Channel</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@font-face{font-family:Star4000;src:url(fonts/Star4000.woff) format('woff')}
+@font-face{font-family:StarLarge;src:url("fonts/Star4000 Large.woff") format('woff')}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:Star4000,Arial,sans-serif;color:#fff}
+#s{position:absolute;left:50%;top:50%;width:640px;height:480px;transform-origin:center;background:linear-gradient(#102080,#1e3ca0 30%,#3456c0);text-shadow:3px 3px #000}
+#hdr{height:80px;background:linear-gradient(#c7541a,#e8862a);display:flex;align-items:center;justify-content:space-between;padding:0 30px;font-family:StarLarge,Arial,sans-serif}
+#hdr .t{font-size:30px;color:#ffff00}#clock{font-size:18px;text-align:right}
+.box{margin:14px 30px;padding:10px 16px;background:rgba(10,20,90,.65);border:3px solid #6680e0}
+.big{font-size:56px;font-family:StarLarge,Arial,sans-serif}.row{display:flex;justify-content:space-between;font-size:20px;margin:4px 0}
+#days{display:flex;gap:8px;margin:0 30px}.d{flex:1;text-align:center;background:rgba(10,20,90,.65);border:3px solid #6680e0;padding:6px 0;font-size:18px}
+.d .hi{color:#ffff00;font-size:24px}.d .lo{color:#8cf;font-size:24px}
+#tick{position:absolute;bottom:0;left:0;right:0;height:38px;background:#1a2a80;border-top:3px solid #e8862a;overflow:hidden;white-space:nowrap;font-size:22px;line-height:38px}
+#tick span{display:inline-block;padding-left:100%;animation:sc 40s linear infinite}@keyframes sc{to{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+<div id="s">
+<div id="hdr"><div class="t" id="nm">ASUNCION<br><span style="font-size:20px;color:#fff">PARAGUAY - CURRENT CONDITIONS</span></div><div id="clock"></div></div>
+<div class="box"><div class="row"><div class="big" id="tmp">--</div><div style="font-size:30px;align-self:center" id="cond">LOADING</div></div>
+<div class="row"><span>Humidity: <b id="hum"></b></span><span>Wind: <b id="wind"></b></span></div>
+<div class="row"><span>Feels Like: <b id="fl"></b></span><span>Pressure: <b id="pr"></b></span></div></div>
+<div id="days"></div><div id="tick"><span id="tt"></span></div></div>
+<script>
+const q = new URLSearchParams(location.search);
+const lat = q.get('lat') || -25.2637;
+const lon = q.get('lon') || -57.5759;
+if (q.get('name')) document.getElementById('nm').firstChild.textContent = q.get('name');
+document.getElementById('tt').textContent = q.get('ticker') || 'Welcome to the Lando Weather Channel ... Local on the 8s';
+function fit() {
+  const s = Math.min(innerWidth / 640, innerHeight / 480);
+  document.getElementById('s').style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+fit();
+onresize = fit;
+
+// WMO codes. 0 and 1 are "clear" / "mainly clear"; the sunny wording is daytime only.
+const W = {
+  0: 'Sunny', 1: 'Mostly Sunny', 2: 'Partly Cloudy', 3: 'Cloudy',
+  45: 'Fog', 48: 'Fog', 51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle',
+  61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain',
+  80: 'Showers', 81: 'Showers', 82: 'Heavy Showers',
+  95: 'T-Storms', 96: 'T-Storms', 99: 'T-Storms',
+};
+function wxLabel(code, isDay) {
+  if (code === 0) return isDay ? 'Sunny' : 'Clear';
+  if (code === 1) return isDay ? 'Mostly Sunny' : 'Mostly Clear';
+  return W[code] || '—';
+}
+
+const tick = () => {
+  const o = { hour: 'numeric', minute: '2-digit', second: '2-digit' };
+  document.getElementById('clock').innerHTML =
+    new Date().toLocaleTimeString('en-US', { ...o, timeZone: 'America/Asuncion' }) + ' PYT<br>' +
+    new Date().toLocaleTimeString('en-US', { ...o, timeZone: 'America/Chicago' }) + ' CEDAR PK';
+};
+tick();
+setInterval(tick, 1000);
+
+async function load() {
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FAsuncion&forecast_days=5`);
+  const d = await r.json();
+  const c = d.current;
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const isDay = c.is_day === 1;
+  tmp.textContent = Math.round(c.temperature_2m) + '°';
+  cond.textContent = wxLabel(c.weather_code, isDay);
+  hum.textContent = c.relative_humidity_2m + '%';
+  wind.textContent = dirs[Math.round(c.wind_direction_10m / 45) % 8] + ' ' + Math.round(c.wind_speed_10m) + ' mph';
+  fl.textContent = Math.round(c.apparent_temperature) + '°';
+  pr.textContent = (c.surface_pressure * 0.02953).toFixed(2) + ' in';
+  days.innerHTML = d.daily.time.map((t, i) => `<div class="d">${new Date(t + 'T12:00').toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}<br>${wxLabel(d.daily.weather_code[i], true)}<br><span class="hi">${Math.round(d.daily.temperature_2m_max[i])}</span> <span class="lo">${Math.round(d.daily.temperature_2m_min[i])}</span></div>`).join('');
+}
+load().catch(() => { cond.textContent = 'NO DATA'; });
+setInterval(load, 600000);
+</script>
+</body>
+</html>

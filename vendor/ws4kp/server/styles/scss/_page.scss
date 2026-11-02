@@ -1,0 +1,496 @@
+@use 'shared/positions'as p;
+
+@font-face {
+	font-family: "Star4000";
+	src: url('../fonts/Star4000.woff') format('woff');
+	font-display: swap;
+}
+
+// always reserve the scrollbar's space, so the width resize() measures doesn't change
+// when shrinking the display makes the page short enough for the scrollbar to disappear
+// not in kiosk mode, which hides overflow and would otherwise keep an empty strip on the right
+html:not(:has(body.kiosk)) {
+	scrollbar-gutter: stable;
+}
+
+body {
+	font-family: "Star4000";
+	margin: 0;
+
+	@media (prefers-color-scheme: dark) {
+		background-color: #000000;
+		color: white;
+	}
+
+	a {
+		@media (prefers-color-scheme: dark) {
+			color: lightblue;
+		}
+	}
+
+	&.kiosk {
+		margin: 0px;
+		padding: 0px;
+		overflow: hidden;
+		width: 100vw;
+		// Always use black background in kiosk mode, regardless of light/dark preference
+		background-color: #000000 !important;
+	}
+}
+
+#divQuery {
+	// match the player's rendered width, which tabs.mjs measures when the player is scaled
+	box-sizing: border-box;
+	width: var(--player-width, 100%);
+	max-width: var(--player-width, #{p.$standard-width});
+	padding: 8px;
+
+	// the text box takes the space left over by the buttons
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: 8px;
+
+	&:has(~ #divTwc.wide) {
+		max-width: var(--player-width, #{p.$wide-width});
+	}
+
+	.location-input {
+		// a zero basis lets the text box shrink before the buttons wrap to the next line
+		flex: 1 1 0;
+		min-width: 0;
+		// the autocomplete list is added after the text box and positioned against this
+		position: relative;
+
+		.autocomplete-suggestions {
+			top: 100%;
+			left: 0px;
+		}
+	}
+
+	.location-status {
+		flex-basis: 100%;
+		margin-top: 6px;
+		font-size: 14px;
+		color: #c62828;
+	}
+
+	.buttons {
+		flex: none;
+		// flex instead of inline-block so the spacing doesn't depend on whitespace in the html (minified in dist)
+		display: flex;
+		gap: 4px;
+
+		button {
+			font-size: 21px;
+			border: 1px solid darkgray;
+
+			@media (prefers-color-scheme: dark) {
+				background-color: #000000;
+				color: white;
+			}
+
+		}
+
+		#btnGetGps {
+			img {
+
+				&.dark {
+					display: none;
+
+					@media (prefers-color-scheme: dark) {
+						display: inline-block;
+					}
+				}
+
+				&.light {
+					@media (prefers-color-scheme: dark) {
+						display: none;
+					}
+				}
+			}
+
+			&.active {
+				background-color: black;
+
+				@media (prefers-color-scheme: dark) {
+					background-color: white;
+				}
+
+				img {
+					filter: invert(1);
+				}
+			}
+		}
+	}
+
+	input,
+	button {
+		font-family: "Star4000";
+	}
+
+	#txtLocation {
+		box-sizing: border-box;
+		width: 100%;
+		font-size: 21px;
+		display: block;
+
+		// Ensure consistent styling across light and dark modes
+		background-color: white;
+		color: black;
+		border: 2px inset #808080;
+
+		@media (prefers-color-scheme: dark) {
+			background-color: #000000;
+			color: white;
+			border: 2px inset #808080;
+		}
+	}
+
+
+}
+
+.autocomplete-suggestions {
+	background-color: #ffffff;
+	border: 1px solid #000000;
+	position: absolute;
+	z-index: 9999;
+
+	@media (prefers-color-scheme: dark) {
+		background-color: #000000;
+	}
+
+	div {
+		/*padding: 2px 5px;*/
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-size: 21px;
+
+		&.selected {
+			background-color: #0000ff;
+			color: #ffffff;
+		}
+	}
+
+}
+
+#divTwc {
+	display: block;
+	background-color: #000000;
+	color: #ffffff;
+	width: 100%;
+	max-width: p.$standard-width;
+	margin: 0; // Ensure edge-to-edge display
+
+	&.wide {
+		max-width: p.$wide-width;
+	}
+}
+
+.content-wrapper {
+	padding: 8px;
+}
+
+#divTwcMain {
+	width: p.$standard-width;
+	height: p.$standard-height;
+	position: relative;
+
+	.wide & {
+		width: p.$wide-width;
+	}
+
+	.enhanced.portrait & {
+		height: p.$portrait-height;
+	}
+}
+
+.kiosk #divTwc {
+	max-width: unset;
+}
+
+#divTwcBottom {
+	/* visibility: hidden; */
+	display: flex;
+	flex-direction: row;
+	background-color: #000000;
+
+	color: #ffffff;
+	width: p.$standard-width;
+
+	.wide & {
+		width: p.$wide-width;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		background-color: rgb(48, 48, 48);
+	}
+
+}
+
+#divTwcBottom>div {
+	padding-left: 6px;
+	padding-right: 6px;
+
+	// Use font-size scaling instead of zoom/transform to avoid layout gaps and preserve icon tap targets.
+	// While not semantically ideal, it works well for our fixed-layout design.
+	@media (max-width: 550px) {
+		font-size: 0.90em;
+	}
+
+	@media (max-width: 500px) {
+		font-size: 0.80em;
+	}
+
+	@media (max-width: 450px) {
+		font-size: 0.70em;
+	}
+
+	@media (max-width: 400px) {
+		font-size: 0.60em;
+	}
+
+	@media (max-width: 350px) {
+		font-size: 0.50em;
+	}
+}
+
+#divTwcBottomLeft {
+	flex: 1;
+	text-align: left;
+
+}
+
+#divTwcBottomMiddle {
+	flex: 0;
+	text-align: center;
+}
+
+#divTwcBottomRight {
+	flex: 1;
+	text-align: right;
+}
+
+@font-face {
+	font-family: 'Star4000 Extended';
+	src: url('../fonts/Star4000 Extended.woff') format('woff');
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Star4000 Large';
+	src: url('../fonts/Star4000 Large.woff') format('woff');
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Star4000 Small';
+	src: url('../fonts/Star4000 Small.woff') format('woff');
+	font-display: swap;
+}
+
+#display {
+	font-family: "Star4000";
+	margin: 0 0 0 0;
+	width: 100%;
+}
+
+#container {
+	position: relative;
+	width: p.$standard-width;
+	height: p.$standard-height;
+	// overflow: hidden;
+	background-image: url(../images/backgrounds/1.png);
+	transform-origin: 0 0;
+	background-repeat: no-repeat;
+
+	.portrait.enhanced & {
+		width: p.$portrait-width;
+		height: p.$portrait-height;
+		background-image: url(../images/backgrounds/1-portrait.png);
+	}
+}
+
+.wide #container {
+	width: p.$wide-width;
+	background: url(../images/backgrounds/1-wide.png);
+	background-repeat: no-repeat;
+}
+
+#divTwc:fullscreen #container,
+.kiosk #divTwc #container {
+	// background-image: none;
+	width: unset;
+	height: unset;
+}
+
+#loading {
+	width: p.$standard-width;
+	height: p.$standard-height;
+	max-width: 100%;
+	text-shadow: 4px 4px black;
+	display: flex;
+	align-items: center;
+	text-align: center;
+	justify-content: center;
+
+	.wide & {
+		margin-left: p.$wide-margin;
+	}
+
+	.title {
+		font-family: Star4000 Large;
+		font-size: 36px;
+		color: yellow;
+		margin-bottom: 0px;
+	}
+
+	.version {
+		margin-bottom: 35px;
+	}
+
+	.instructions {
+		font-size: 24px;
+	}
+
+	.location-status {
+		max-width: 80%;
+		margin: 24px auto 0;
+		font-size: 20px;
+		color: yellow;
+	}
+}
+
+.location-status:empty {
+	display: none;
+}
+
+#divTwcBottom img {
+	transform: scale(0.75);
+
+	// Make icons larger in widescreen mode on mobile
+	@media (max-width: 550px) {
+		.wide & {
+			transform: scale(1.0); // Larger icons in widescreen
+		}
+	}
+}
+
+#divTwc:fullscreen,
+.kiosk #divTwc {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	align-content: center;
+
+	&.no-cursor {
+		cursor: none;
+	}
+}
+
+#divTwc:fullscreen #display,
+.kiosk #divTwc #display {
+	position: relative;
+}
+
+#divTwc:fullscreen #divTwcBottom,
+.kiosk #divTwc #divTwcBottom {
+	display: flex;
+	flex-direction: row;
+	background-color: rgb(0 0 0 / 0.5);
+	color: #ffffff;
+	width: 100%;
+	position: absolute;
+	bottom: 0px;
+}
+
+.kiosk {
+	#divTwc #divTwcBottom {
+		display: none;
+	}
+}
+
+// toolbar controls are buttons for keyboard and screen reader access, reset so only the icon shows
+.navButton {
+	cursor: pointer;
+	background: none;
+	border: 0;
+	padding: 0;
+	margin: 0;
+	color: inherit;
+	font: inherit;
+
+	&:focus-visible {
+		outline: 2px solid yellow;
+		outline-offset: -4px;
+		border-radius: 4px;
+	}
+}
+
+#ToggleScanlines {
+	display: inline-block;
+
+	.on {
+		display: none;
+	}
+
+	.off {
+		display: inline-block;
+	}
+
+
+	&.on {
+		.on {
+			display: inline-block;
+		}
+
+		.off {
+			display: none;
+		}
+
+	}
+}
+
+.visible {
+	visibility: visible;
+	opacity: 1;
+	transition: opacity 0.1s linear;
+}
+
+#divTwc:fullscreen .hidden {
+	visibility: hidden;
+	opacity: 0;
+	transition: visibility 0s 1s, opacity 1s linear
+}
+
+
+
+// Hide instructions in kiosk mode (higher specificity than the show rule)
+body.kiosk #loading .instructions {
+	display: none !important;
+}
+
+.kiosk {
+
+	// In kiosk mode, hide everything except the main weather display
+	>*:not(#divTwc) {
+		display: none !important;
+	}
+}
+
+.portrait-only {
+	display: none;
+
+	.portrait.enhanced & {
+		display: block;
+	}
+}
+
+.standard-only {
+	display: block;
+
+	.portrait.enhanced & {
+		display: none;
+	}
+}

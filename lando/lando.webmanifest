@@ -1,0 +1,17 @@
+{
+  "name": "Lando Weather Channel",
+  "short_name": "Lando WX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#1b1464",
+  "theme_color": "#1b1464",
+  "icons": [
+    {
+      "src": "lando-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
