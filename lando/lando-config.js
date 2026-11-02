@@ -28,9 +28,9 @@ window.LANDO = {
   },
 
   // Scheduled times only. No booking code, passenger name, or seat — this site is public.
-  // Return stays null until the flight is known; the panel shows RETURN: TBD.
+  // A layover string on a leg is the wait before that leg.
   trip: {
-    layover: "1h23m",
+    hotel: { name: "Sheraton Asuncion", dates: "NOV 3-6" },
     outbound: [
       {
         flight: "CM 716",
@@ -43,6 +43,7 @@ window.LANDO = {
       },
       {
         flight: "CM 291",
+        layover: "1h23m",
         from: "PTY",
         depart: "2026-11-02T21:23:00-05:00",
         departZone: "America/Panama",
@@ -51,15 +52,39 @@ window.LANDO = {
         arriveZone: "America/Asuncion",
       },
     ],
-    returnTrip: {
-      flight: null,
-      from: null,
-      depart: null,
-      departZone: null,
-      to: null,
-      arrive: null,
-      arriveZone: null,
-    },
+    // CM 206 leaves 1:47 AM Friday Nov 6 Asunción time, the night of Thu Nov 5.
+    returnTrip: [
+      {
+        flight: "CM 206",
+        from: "ASU",
+        depart: "2026-11-06T01:47:00-03:00",
+        departZone: "America/Asuncion",
+        to: "PTY",
+        arrive: "2026-11-06T05:58:00-05:00",
+        arriveZone: "America/Panama",
+      },
+      {
+        flight: "UA 1249",
+        operatedBy: "Copa",
+        layover: "2h57m",
+        from: "PTY",
+        depart: "2026-11-06T08:55:00-05:00",
+        departZone: "America/Panama",
+        to: "IAH",
+        arrive: "2026-11-06T12:15:00-06:00",
+        arriveZone: "America/Chicago",
+      },
+      {
+        flight: "UA 2483",
+        layover: "1h55m",
+        from: "IAH",
+        depart: "2026-11-06T14:10:00-06:00",
+        departZone: "America/Chicago",
+        to: "AUS",
+        arrive: "2026-11-06T15:21:00-06:00",
+        arriveZone: "America/Chicago",
+      },
+    ],
   },
 
   // A commercial break in the main area after every 3 city rotations.

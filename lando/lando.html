@@ -78,7 +78,8 @@ body.no-panel #stage{flex:1 1 100%}
       <div id="trip-state">DEPARTS IN</div>
       <div id="trip-countdown">--</div>
       <div id="trip-detail"></div>
-      <div id="trip-return">RETURN: TBD</div>
+      <div id="trip-hotel"></div>
+      <div id="trip-return"></div>
       <div id="clocks"></div>
       <div id="asu-wx">ASUNCION --</div>
       <div id="fx">1 USD = … PYG</div>
@@ -422,59 +423,72 @@ function remain(ms) {
   const sec = s % 60;
   return days + ' DAYS  ' + hrs + ' HRS  ' + String(min).padStart(2, '0') + ' MIN  ' + String(sec).padStart(2, '0') + ' SEC';
 }
+function scanLegs(list, now) {
+  for (let n = 0; n < list.length; n += 1) {
+    const dep = new Date(list[n].depart);
+    const arr = new Date(list[n].arrive);
+    if (now >= dep && now < arr) return { mode: 'enroute', leg: list[n] };
+    if (n < list.length - 1 && now >= arr && now < new Date(list[n + 1].depart)) return { mode: 'layover', leg: list[n + 1] };
+  }
+  return null;
+}
+function legLine(item, idx) {
+  const lay = idx > 0 && item.layover ? '<div class="lay">LAYOVER ' + esc(item.layover) + '</div>' : '';
+  const note = item.operatedBy ? '<div class="lay">OP BY ' + esc(item.operatedBy).toUpperCase() + '</div>' : '';
+  return lay + '<div class="leg"><b>' + esc(item.flight) + '</b> ' + esc(item.from) + ' ' + hm(item.depart, item.departZone) + ' → ' + esc(item.to) + ' ' + hm(item.arrive, item.arriveZone) + '</div>' + note;
+}
 function paintTrip() {
   const now = new Date();
   const legs = C.trip.outbound || [];
-  const ret = C.trip.returnTrip || {};
+  const returns = Array.isArray(C.trip.returnTrip) ? C.trip.returnTrip : [];
   const state = document.getElementById('trip-state');
   const big = document.getElementById('trip-countdown');
   const first = legs[0] ? new Date(legs[0].depart) : null;
   const lastArr = legs.length ? new Date(legs[legs.length - 1].arrive) : null;
+  const returnDepart = returns[0] ? new Date(returns[0].depart) : null;
+  const homeArr = returns.length ? new Date(returns[returns.length - 1].arrive) : null;
   let mode = 'countdown';
   let leg = null;
   if (first && now < first) mode = 'countdown';
   else {
-    for (let n = 0; n < legs.length; n += 1) {
-      const dep = new Date(legs[n].depart);
-      const arr = new Date(legs[n].arrive);
-      if (now >= dep && now < arr) { mode = 'enroute'; leg = legs[n]; break; }
-      if (n < legs.length - 1 && now >= arr && now < new Date(legs[n + 1].depart)) { mode = 'layover'; leg = legs[n + 1]; break; }
-    }
-    if (!leg && lastArr && now >= lastArr) {
-      if (ret.depart && now < new Date(ret.depart)) mode = 'return-count';
-      else if (ret.depart && ret.arrive && now < new Date(ret.arrive)) { mode = 'enroute'; leg = ret; }
-      else if (ret.arrive && now >= new Date(ret.arrive)) mode = 'home';
-      else mode = 'paraguay';
-    }
+    const outboundHit = scanLegs(legs, now);
+    if (outboundHit) {
+      mode = outboundHit.mode;
+      leg = outboundHit.leg;
+    } else if (lastArr && returnDepart && now >= lastArr && now < returnDepart) mode = 'return-count';
+    else if (returnDepart && now >= returnDepart) {
+      const returnHit = scanLegs(returns, now);
+      if (returnHit) {
+        mode = returnHit.mode;
+        leg = returnHit.leg;
+      } else if (homeArr && now >= homeArr) mode = 'home';
+    } else if (lastArr && now >= lastArr) mode = 'paraguay';
   }
   if (mode === 'countdown') {
     state.textContent = 'DEPARTS IN';
     big.textContent = remain(first - now);
   } else if (mode === 'enroute') {
     state.textContent = 'EN ROUTE';
-    big.textContent = leg.flight + '  ' + leg.from + ' → ' + leg.to;
-    big.textContent += '\nLANDS IN  ' + remain(new Date(leg.arrive) - now);
+    big.textContent = leg.flight + '  ' + leg.from + ' → ' + leg.to + '\nLANDS IN  ' + remain(new Date(leg.arrive) - now);
   } else if (mode === 'layover') {
     state.textContent = 'LAYOVER';
-    big.textContent = remain(new Date(leg.depart) - now);
+    big.textContent = (leg.layover ? leg.layover + '\n' : '') + remain(new Date(leg.depart) - now);
   } else if (mode === 'return-count') {
     state.textContent = 'IN PARAGUAY - DAY ' + dayNumber(lastArr, now);
-    big.textContent = 'RETURN IN  ' + remain(new Date(ret.depart) - now);
+    big.textContent = returns[0].flight + ' IN\n' + remain(returnDepart - now);
   } else if (mode === 'home') {
     state.textContent = 'WELCOME HOME';
-    big.textContent = 'RETURN: COMPLETE';
+    big.textContent = 'AUS';
   } else {
     state.textContent = 'IN PARAGUAY - DAY ' + Math.max(1, dayNumber(lastArr, now));
     big.textContent = 'RETURN: TBD';
   }
-  const bits = [];
-  legs.forEach((item, idx) => {
-    if (idx === 1 && C.trip.layover) bits.push('<div class="lay">LAYOVER ' + C.trip.layover + '</div>');
-    bits.push('<div class="leg"><b>' + item.flight + '</b> ' + item.from + ' ' + hm(item.depart, item.departZone) + ' → ' + item.to + ' ' + hm(item.arrive, item.arriveZone) + '</div>');
-  });
-  document.getElementById('trip-detail').innerHTML = bits.join('');
-  if (!ret.depart) document.getElementById('trip-return').textContent = 'RETURN: TBD';
-  else document.getElementById('trip-return').textContent = 'RETURN ' + (ret.flight || '') + ' ' + (ret.from || '') + ' ' + hm(ret.depart, ret.departZone) + ' → ' + (ret.to || '') + ' ' + hm(ret.arrive, ret.arriveZone);
+  document.getElementById('trip-detail').innerHTML = legs.map(legLine).join('');
+  const hotel = C.trip.hotel;
+  document.getElementById('trip-hotel').textContent = hotel ? 'HOTEL ' + hotel.name.toUpperCase() + '  ' + hotel.dates : '';
+  document.getElementById('trip-return').innerHTML = returns.length
+    ? '<div class="day-h">RETURN</div>' + returns.map(legLine).join('')
+    : 'RETURN: TBD';
 }
 function paintClock() {
   const now = new Date();
