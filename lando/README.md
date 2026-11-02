@@ -4,6 +4,7 @@ These files are copied onto the built forecast site by `scripts/assemble-site.sh
 
 - Cities, rotation time, ticker, trip, callsigns, and display flags: `lando/lando-config.js`
 - Channel lineups (cartoons, Saturday morning, commercials, music videos): `lando/channels.js`
+- Kiosk styling: `lando/lando.css` (linked with a `?v=` query so phones pick up a new build)
 - Asuncion screen (Open-Meteo, °F): `lando/asuncion.html`
 - Bumper, CRT overlay, scrolling side panel, flight tracker, rotation, and music: `lando/lando.html`
   - `?crt=false` turns the overlay off

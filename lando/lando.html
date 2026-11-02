@@ -7,119 +7,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Weather Lounge">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <link rel="icon" href="lando-icon.png">
 <link rel="apple-touch-icon" href="lando-icon.png">
 <link rel="manifest" href="lando.webmanifest">
-<script src="channels.js"></script>
+<link rel="stylesheet" href="lando.css?v=20261102e">
+<script src="channels.js?v=20261102e"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="lando-config.js"></script>
-<style>
-@font-face{font-family:Star4000;src:url("fonts/Star4000.woff") format("woff");font-display:swap}
-@font-face{font-family:StarLarge;src:url("fonts/Star4000 Large.woff") format("woff");font-display:swap}
-html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#fff;font-family:Star4000,Arial,sans-serif}
-#tv{display:flex;height:100%;width:100%}
-#stage{position:relative;flex:1 1 72%;min-width:0;background:#000;overflow:hidden}
-#panel{flex:0 0 28%;width:28%;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(#0c1868,#16308a 40%,#102060);border-left:4px solid #e8862a;text-shadow:2px 2px #000}
-body.no-panel #panel{display:none}
-body.no-panel #stage{flex:1 1 100%}
-#stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
-#bump{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4vh;background:linear-gradient(#1b1464,#2e4bb8 60%,#c75a12);color:#fff;font:bold 4.4vw StarLarge,Arial,sans-serif;text-align:center;text-shadow:4px 4px #000;transition:opacity 1s;line-height:.95}
-#bump .badge{margin-top:.6vh;padding:.15em .45em;background:#102060;color:#ffb000;border:3px solid #e8862a;font:bold 2.3vw Star4000,Arial,sans-serif;letter-spacing:.08em}
-#bump .tag{font-size:1.5vw;color:#fff;font-family:Star4000,Arial,sans-serif}
-#bump #bn{font-size:2vw;color:#ffff00;font-family:Star4000,Arial,sans-serif}
-#eights{position:absolute;left:3%;bottom:6%;z-index:6;padding:8px 14px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00;border:3px solid #fff;font:bold 22px StarLarge,Arial,sans-serif;letter-spacing:.04em;text-shadow:2px 2px #000}
-#eights[hidden]{display:none}
-#adbreak{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;background:#000}
-#adbreak[hidden]{display:none}
-#ad-bumper{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1vh;background:linear-gradient(#1b1464,#2e4bb8 45%,#c75a12);text-align:center;font:bold 4.6vw StarLarge,Arial,sans-serif;text-shadow:4px 4px #000}
-#ad-bumper .badge{padding:.2em .5em;background:#102060;color:#ffb000;border:3px solid #e8862a;font:bold 2vw Star4000,Arial,sans-serif;letter-spacing:.06em}
-#ad-bumper .tag{font-size:1.5vw;color:#fff;font-family:Star4000,Arial,sans-serif}
-#ad-bumper[hidden]{display:none}
-#ad-player{position:relative;flex:1;background:#000;min-height:0}
-#ad-player[hidden]{display:none}
-#yt-slot,#ad-player iframe{position:absolute;inset:0;width:100%;height:100%}
-#ad-caption{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:8px 12px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00;font:bold 20px Star4000,Arial,sans-serif;text-shadow:2px 2px #000}
-#ad-sound{position:absolute;top:12px;right:12px;z-index:3;padding:8px 12px;background:#1b1464;color:#ffb000;border:3px solid #e8862a;font:bold 16px Star4000,Arial,sans-serif;cursor:pointer}
-#ad-sound[hidden]{display:none}
-#crt{pointer-events:none;position:fixed;inset:0;z-index:8;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 12vw rgba(0,0,0,.6)}
-#music-catch{position:fixed;inset:0;z-index:30;background:transparent;cursor:pointer;touch-action:manipulation}
-#music-hint{position:fixed;left:2vw;bottom:2.5vh;z-index:31;pointer-events:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(10,20,90,.82);border:3px solid #e8862a;color:#ffb000;font:bold 18px Star4000,Arial,sans-serif;letter-spacing:.06em;text-shadow:2px 2px #000}
-#music-hint svg{display:block;flex:none}
-#music-hint[hidden]{display:none}
-#channel-stage{position:absolute;inset:0;z-index:5;background:#000}
-body.is-weather #channel-stage{display:none !important}
-body:not(.is-weather) #panel{display:none}
-body:not(.is-weather) #stage{flex:1 1 100%}
-body:not(.is-weather) #bump,body:not(.is-weather) #flight-segment,body:not(.is-weather) #adbreak,body:not(.is-weather) #eights{display:none !important}
-#ch-yt-host,#ch-archive,#ch-yt{position:absolute;inset:0;width:100%;height:100%}
-#ch-yt-host iframe,#ch-archive{width:100%;height:100%;border:0}
-#info-card{position:absolute;left:28px;bottom:36px;z-index:4;max-width:48%;background:rgba(0,0,0,.8);color:#fff;padding:14px 18px;border-left:6px solid #e8862a;text-shadow:2px 2px #000}
-#info-card[hidden]{display:none}
-#card-kicker{font-size:13px;letter-spacing:.16em;color:#fff}
-#card-artist{color:#ffb000;font-size:22px}
-#card-title{font:bold 30px StarLarge,Arial,sans-serif;line-height:1.05;margin:4px 0}
-#card-meta{font-size:16px;color:#ddd}
-#ch-sound{position:absolute;top:16px;right:16px;z-index:5;padding:10px 14px;background:#102060;color:#ffb000;border:3px solid #e8862a;font:bold 18px Star4000,Arial,sans-serif;cursor:pointer}
-#ch-sound[hidden]{display:none}
-#ch-status{position:absolute;left:16px;top:16px;z-index:4;color:#ffb000;font-size:16px;text-shadow:2px 2px #000}
-#tv-static{position:fixed;inset:0;z-index:40;pointer-events:none;opacity:.9;background:repeating-linear-gradient(90deg,#0a0a0a 0 2px,#d8d8d8 2px 3px,#222 3px 5px,#f5f5f5 5px 6px);animation:snow .08s steps(2) infinite}
-#tv-static[hidden]{display:none}
-@keyframes snow{to{background-position:18px 11px}}
-#osd{position:fixed;top:5vh;right:3vw;z-index:41;pointer-events:none;min-width:240px;padding:10px 16px 12px;background:rgba(0,0,0,.78);border:3px solid #39ff14;color:#39ff14;text-shadow:0 0 8px #39ff14;font-family:Star4000,ui-monospace,monospace}
-#osd[hidden]{display:none}
-#osd .num{font:bold 48px StarLarge,ui-monospace,monospace;line-height:.9}
-#osd .nm{margin-top:6px;font-size:16px;letter-spacing:.04em}
-#ch-pad{position:fixed;right:16px;bottom:18px;z-index:28;display:flex;flex-direction:column;gap:8px;opacity:0;transition:opacity .7s;pointer-events:none}
-#ch-pad.show{opacity:1;pointer-events:auto}
-#ch-pad button{background:#061208;color:#39ff14;border:3px solid #39ff14;font:bold 18px Star4000,ui-monospace,monospace;padding:8px 12px;cursor:pointer;text-shadow:0 0 6px #39ff14}
-#panel-viewport{flex:1;min-height:0;overflow:hidden;position:relative}
-#panel-viewport.static{overflow:auto}
-#panel-track{will-change:transform}
-.panel-sheet{box-sizing:border-box}
-.clock-block{padding:16px 18px 14px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00}
-#clock-time{font:bold 34px StarLarge,Arial,sans-serif;line-height:1}
-#clock-date{margin-top:4px;font-size:16px;color:#fff;letter-spacing:.06em}
-.block{padding:22px 18px 26px}
-.sec-head{margin:0 0 14px;padding:8px 12px;background:#102060;color:#ffb000;border-left:8px solid #e8862a;font:bold 22px StarLarge,Arial,sans-serif;letter-spacing:.06em}
-#trip-state{color:#ffb000;font-size:18px;letter-spacing:.05em}
-#trip-countdown{font:bold 32px StarLarge,Arial,sans-serif;line-height:1.12;margin:8px 0 12px;white-space:pre-line}
-#leg-now{font-size:22px;line-height:1.25;margin:0 0 14px}
-#leg-now .kicker{color:#8cf;font-size:16px;letter-spacing:.08em}
-#trip-itinerary{font-size:16px;line-height:1.45}
-.leg b{color:#ffff00}
-.lay,.day-h{color:#8cf;margin-top:8px}
-#map-panel{height:180px}
-.radar-map{position:relative;background:#041018;overflow:hidden}
-.radar-map .leaflet-tile-pane{filter:grayscale(1) invert(1) sepia(.85) hue-rotate(175deg) saturate(3.2) brightness(.62) contrast(1.35)}
-.radar-map::after{content:"";pointer-events:none;position:absolute;inset:0;z-index:450;background:repeating-linear-gradient(0deg,rgba(0,0,0,.32) 0 1px,transparent 1px 3px)}
-.radar-map .leaflet-control-attribution{font-size:9px;background:rgba(0,0,0,.45);color:#9cf}
-#track-readout,#track-readout-main,#asu-time,#asu-wx,#fx,#sun,#moon,#aqi{font-size:18px;line-height:1.4;margin-top:8px}
-.plane{width:28px;height:28px;margin-left:-14px;margin-top:-14px}
-.plane svg{display:block;filter:drop-shadow(2px 2px 0 #000)}
-#flight-segment{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;background:#06122e}
-#flight-segment[hidden]{display:none}
-.seg-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:linear-gradient(#c7541a,#e8862a);color:#ffff00;font:bold 28px StarLarge,Arial,sans-serif}
-.seg-title .badge{padding:4px 10px;background:#102060;color:#ffb000;border:3px solid #fff;font:bold 16px Star4000,Arial,sans-serif;letter-spacing:.08em}
-#map-main{flex:1;min-height:0}
-#track-readout-main{padding:10px 16px;background:#102060;color:#fff;font-size:22px}
-.credit{margin:0;padding:8px 18px 28px;color:#8cf;font-size:13px}
-@media (prefers-reduced-motion: reduce){
-  #panel-viewport{overflow:auto}
-  #panel-track{transform:none !important}
-}
-</style>
+<script src="lando-config.js?v=20261102e"></script>
+
 </head>
 <body class="is-weather">
 <div id="tv">
   <div id="stage">
-    <iframe id="f" title="Local forecast" allow="fullscreen"></iframe>
+    <iframe id="f" title="Local forecast" allow="autoplay"></iframe>
     <div id="bump"><div>LANDO'S<br>WEATHER LOUNGE</div><div class="badge">ON THE 8s</div><div class="tag">SMOOTH JAZZ &amp; SUNNY SKIES</div><small id="bn">NOW: LOCAL</small></div>
     <div id="eights" hidden>LOCAL ON THE 8s</div>
-    <div id="flight-segment" hidden>
-      <div class="seg-title">FLIGHT TRACKER<span class="badge">ON THE 8s</span></div>
-      <div id="map-main" class="radar-map"></div>
-      <div id="track-readout-main">EST.</div>
-    </div>
     <div id="adbreak" hidden>
       <div id="ad-bumper">WE'LL BE RIGHT BACK<div class="badge">LANDO'S WEATHER LOUNGE • ON THE 8s</div><div class="tag">SMOOTH JAZZ &amp; SUNNY SKIES</div></div>
       <div id="ad-player" hidden>
@@ -130,7 +33,7 @@ body:not(.is-weather) #bump,body:not(.is-weather) #flight-segment,body:not(.is-w
     </div>
     <div id="channel-stage">
       <div id="ch-yt-host"><div id="ch-yt"></div></div>
-      <iframe id="ch-archive" hidden title="Archive film" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <iframe id="ch-archive" hidden title="Archive film" allow="autoplay" playsinline webkit-playsinline referrerpolicy="strict-origin-when-cross-origin"></iframe>
       <div id="info-card" hidden>
         <div id="card-kicker">NOW PLAYING</div>
         <div id="card-artist"></div>
@@ -154,12 +57,7 @@ body:not(.is-weather) #bump,body:not(.is-weather) #flight-segment,body:not(.is-w
             <div id="trip-state">DEPARTS IN</div>
             <div id="trip-countdown">--</div>
             <div id="leg-now"></div>
-            <div id="trip-itinerary"></div>
-          </section>
-          <section class="block" id="tracker-block">
-            <h2 class="sec-head">LIVE FLIGHT TRACKER</h2>
-            <div id="map-panel" class="radar-map"></div>
-            <div id="track-readout" class="mirror">ROUTE</div>
+            <div id="trip-hotel"></div>
           </section>
           <section class="block mirror" id="asu-block">
             <h2 class="sec-head">ASUNCION NOW</h2>
@@ -180,9 +78,28 @@ body:not(.is-weather) #bump,body:not(.is-weather) #flight-segment,body:not(.is-w
   </aside>
 </div>
 <div id="crt"></div>
+<div id="flight-bar" role="status"><div id="flight-line">FLIGHT</div><div id="flight-meter"><span id="flight-meter-fill"></span></div></div>
+<nav id="ch-dock" aria-label="Channels">
+  <button type="button" id="ch-up" aria-label="Channel up">CH ▲</button>
+  <div id="ch-readout"><span id="ch-num">08</span><span id="ch-name">WEATHER</span></div>
+  <button type="button" id="ch-down" aria-label="Channel down">CH ▼</button>
+  <button type="button" id="ch-home">CH 8 WEATHER</button>
+  <button type="button" id="ch-mute" aria-pressed="false">SND</button>
+</nav>
+<div id="map-pin">
+  <div id="map-pin-canvas" class="radar-map"></div>
+  <div id="map-stats">
+    <div class="row"><b id="ms-flight">—</b><span id="ms-src">EST</span></div>
+    <div class="row"><span id="ms-alt">ALT —</span><span id="ms-gs">GS —</span></div>
+    <div class="row"><span id="ms-mi">— MI</span><span id="ms-eta">ARV —</span></div>
+    <div class="row"><span id="ms-togo">—</span></div>
+    <div id="ms-meter"><span id="ms-fill"></span></div>
+  </div>
+  <button type="button" id="map-close">CLOSE</button>
+</div>
+<div id="ch-unlock" hidden><span>TAP FOR SOUND</span></div>
 <div id="tv-static" hidden></div>
 <div id="osd" hidden><div class="num">08</div><div class="nm">LANDO'S WEATHER LOUNGE</div></div>
-<div id="ch-pad"><button type="button" id="ch-up">CH+</button><button type="button" id="ch-down">CH-</button></div>
 <audio id="music" preload="auto" playsinline></audio>
 <div id="music-catch" aria-hidden="true"></div>
 <div id="music-hint"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#ffb000" d="M3 9v6h4l5 4V5L7 9H3z"/><path fill="none" stroke="#ffb000" stroke-width="2" stroke-linecap="round" d="M16.5 9a3.5 3.5 0 010 6M19 6.5a7 7 0 010 11"/></svg>TAP FOR MUSIC</div>
@@ -193,6 +110,7 @@ const rotateMs = (+qs.get('rotate') || C.rotateSeconds) * 1000;
 const adsOff = qs.get('ads') === 'false';
 const adsNow = qs.get('ads') === 'now';
 const musicOff = qs.get('music') === 'false';
+if (qs.get('tracker') === 'false') document.body.classList.add('no-tracker');
 const trackerOff = qs.get('tracker') === 'false';
 const scrollOff = qs.get('scroll') === 'false';
 const nowOverride = qs.get('now');
@@ -488,17 +406,7 @@ async function runBreak() {
   else breakHold = false;
 }
 
-async function showTrackerSegment() {
-  if (trackerOff || !isWeather()) return;
-  const hit = airborneLeg(nowDate());
-  if (!hit || hit.phase !== 'air') return;
-  const el = document.getElementById('flight-segment');
-  el.hidden = false;
-  refreshTracker();
-  if (mainMap) setTimeout(() => { mainMap.invalidateSize(); mainMap._landoFit = false; refreshTracker(); }, 80);
-  await sleep(20000);
-  el.hidden = true;
-}
+async function showTrackerSegment() { return; }
 async function rotationLoop() {
   showCity();
   if (nowOverride && !trackerOff) {
@@ -605,8 +513,7 @@ function paintTrip() {
     ? '<div class="kicker">' + esc(focus.kicker) + '</div><b>' + esc(focus.leg.flight) + '</b> ' + esc(focus.leg.from) + ' ' + hm(focus.leg.depart, focus.leg.departZone) + ' → ' + esc(focus.leg.to) + ' ' + hm(focus.leg.arrive, focus.leg.arriveZone)
     : '';
   const hotel = C.trip.hotel;
-  const hotelLine = hotel ? '<div class="leg">HOTEL ' + esc(hotel.name).toUpperCase() + '  ' + esc(hotel.dates) + '</div>' : '';
-  document.getElementById('trip-itinerary').innerHTML = legs.map(legLine).join('') + hotelLine + (returns.length ? '<div class="day-h">RETURN</div>' + returns.map(legLine).join('') : '<div class="day-h">RETURN: TBD</div>');
+  document.getElementById('trip-hotel').textContent = hotel ? 'HOTEL ' + hotel.name.toUpperCase() + '  ' + hotel.dates : '';
 }
 function focusLeg(mode, leg, legs, returns) {
   if (mode === 'enroute' || mode === 'layover') return { kicker: mode === 'enroute' ? 'NOW' : 'NEXT', leg };
@@ -709,10 +616,11 @@ const LIVE_URLS = [
   'https://api.adsb.lol/v2/callsign/',
   'https://opendata.adsb.fi/api/v2/callsign/',
 ];
-let panelMap = null;
-let mainMap = null;
-let panelLayers = null;
-let mainLayers = null;
+let pinMap = null;
+let routeLayer = null;
+let labelLayer = null;
+let planeMarker = null;
+let labelKey = '';
 let liveFix = null;
 let liveFlight = null;
 
@@ -782,59 +690,60 @@ function along(leg, now) {
   const nxt = path[Math.min(path.length - 1, idx + 1)];
   return { lat: pos[0], lon: pos[1], heading: bearing(pos, nxt) };
 }
-function planeIcon(heading) {
-  return L.divIcon({
-    className: 'plane',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    html: '<svg viewBox="0 0 24 24" style="transform:rotate(' + heading + 'deg)"><path d="M12 2 L17 21 L12 17 L7 21 Z" fill="#ffff00" stroke="#000" stroke-width="1"/></svg>',
-  });
+const CITY_NAME = { AUS: 'Austin', PTY: 'Panama City', ASU: 'Asunción', IAH: 'Houston' };
+function shortRemain(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(s / 86400);
+  const hrs = Math.floor((s % 86400) / 3600);
+  const min = Math.floor((s % 3600) / 60);
+  if (days > 0) return days + 'd ' + hrs + 'h';
+  if (hrs > 0) return hrs + 'h ' + String(min).padStart(2, '0') + 'm';
+  return min + 'm';
 }
-function makeMap(id) {
-  const map = L.map(id, {
-    zoomControl: false, attributionControl: true, dragging: id === 'map-main', scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false,
-  });
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '&copy; OpenStreetMap',
-  }).addTo(map);
-  return map;
+function haversineMi(a, b) {
+  const R = 3958.8;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
-function drawMap(map, layers, fix) {
-  if (!map) return layers;
-  if (layers) layers.clearLayers();
-  else layers = L.layerGroup().addTo(map);
-  const now = nowDate();
-  const hit = airborneLeg(now);
-  const upcoming = nextLeg(now);
-  const highlight = (hit && hit.leg.flight) || (upcoming && upcoming.flight);
-  allLegs().forEach((leg) => {
-    const from = AIRPORTS[leg.from];
-    const to = AIRPORTS[leg.to];
-    if (!from || !to) return;
-    const hot = leg.flight === highlight;
-    L.polyline(greatCircle(from, to, 48), {
-      color: hot ? '#ffb000' : '#6ea8ff', weight: hot ? 4 : 2, opacity: hot ? 0.95 : 0.55,
-    }).addTo(layers);
-  });
-  Object.entries(AIRPORTS).forEach(([code, ap]) => {
-    L.circleMarker([ap.lat, ap.lon], { radius: 5, color: '#e8862a', weight: 2, fillColor: '#ffff00', fillOpacity: 1 }).addTo(layers).bindTooltip(code, { permanent: true, direction: 'right', opacity: 0.9 });
-  });
-  if (fix) L.marker([fix.lat, fix.lon], { icon: planeIcon(fix.heading || 0), interactive: false }).addTo(layers);
-  if (!map._landoFit && map.getContainer().offsetWidth > 20) {
-    map.fitBounds(Object.values(AIRPORTS).map((ap) => [ap.lat, ap.lon]), { padding: [18, 18] });
-    map._landoFit = true;
+function activeChain(now) {
+  const t = now.getTime();
+  const outbound = C.trip.outbound || [];
+  const ret = C.trip.returnTrip || [];
+  const lastArr = outbound.length ? new Date(outbound[outbound.length - 1].arrive).getTime() : Infinity;
+  const legs = (ret.length && t >= lastArr) ? ret : outbound;
+  let active = legs[0] || null;
+  for (const leg of legs) {
+    if (t < new Date(leg.arrive).getTime()) { active = leg; break; }
+    active = leg;
   }
-  return layers;
+  return { legs, active };
 }
-function readoutText(fix, leg, live) {
-  if (live && fix && leg) {
-    const alt = typeof fix.alt === 'number' ? Math.round(fix.alt).toLocaleString('en-US') + ' FT' : '';
-    const gs = typeof fix.gs === 'number' ? Math.round(fix.gs) + ' KT' : '';
-    return 'LIVE  ' + (leg.callsign || leg.flight) + (alt ? '  ' + alt : '') + (gs ? '  ' + gs : '');
+function flightBarInfo(now) {
+  const t = now.getTime();
+  const legs = allLegs();
+  for (const leg of legs) {
+    const dep = new Date(leg.depart).getTime();
+    const arr = new Date(leg.arrive).getTime();
+    if (t < dep - TRACK_BUFFER_MS) return { flight: leg.flight, from: leg.from, to: leg.to, status: 'SCHEDULED', detail: shortRemain(dep - t), progress: 0 };
+    if (t < dep) return { flight: leg.flight, from: leg.from, to: leg.to, status: 'BOARDING', detail: shortRemain(dep - t), progress: 0 };
+    if (t < arr) {
+      const live = liveFix && liveFlight === leg.flight;
+      return { flight: leg.flight, from: leg.from, to: leg.to, status: 'IN AIR', detail: 'ETA ' + shortRemain(arr - t) + (live ? '  LIVE' : '  EST'), progress: (t - dep) / (arr - dep || 1) };
+    }
   }
-  if (fix && leg) return 'EST.  ' + leg.flight + '  ' + leg.from + ' → ' + leg.to;
-  const upcoming = nextLeg(nowDate());
-  return upcoming ? 'NEXT  ' + upcoming.flight + '  ' + upcoming.from + ' → ' + upcoming.to : 'ROUTE';
+  const last = legs[legs.length - 1];
+  if (!last) return null;
+  return { flight: last.flight, from: last.from, to: last.to, status: 'LANDED', detail: last.to, progress: 1 };
+}
+function paintFlightBar() {
+  const info = flightBarInfo(nowDate());
+  const line = document.getElementById('flight-line');
+  const fill = document.getElementById('flight-meter-fill');
+  if (!info) { line.textContent = 'NO FLIGHT'; fill.style.width = '0'; return; }
+  line.textContent = info.flight + '  ' + info.from + '→' + info.to + '  ·  ' + info.status + '  ·  ' + info.detail;
+  fill.style.width = Math.round((info.progress || 0) * 100) + '%';
 }
 function currentFix() {
   const now = nowDate();
@@ -846,15 +755,152 @@ function currentFix() {
   }
   return { fix: null, leg: hit ? hit.leg : nextLeg(now), live: false };
 }
-function refreshTracker() {
+function planeNow(now) {
   const view = currentFix();
-  const text = readoutText(view.fix, view.leg, view.live);
-  const side = document.getElementById('track-readout');
-  const main = document.getElementById('track-readout-main');
-  if (side) side.textContent = text;
-  if (main) main.textContent = text;
-  panelLayers = drawMap(panelMap, panelLayers, view.fix);
-  if (mainMap && !document.getElementById('flight-segment').hidden) mainLayers = drawMap(mainMap, mainLayers, view.fix);
+  if (view.fix) return view;
+  const chain = activeChain(now);
+  const leg = chain.active;
+  if (!leg) return view;
+  const t = now.getTime();
+  const dep = new Date(leg.depart).getTime();
+  const code = t < dep ? leg.from : leg.to;
+  const otherCode = t < dep ? leg.to : leg.from;
+  const ap = AIRPORTS[code];
+  const other = AIRPORTS[otherCode];
+  if (!ap) return view;
+  const heading = other ? bearing([ap.lat, ap.lon], [other.lat, other.lon]) : 0;
+  return { fix: { lat: ap.lat, lon: ap.lon, heading, alt: null, gs: null }, leg, live: false, atAirport: true };
+}
+function planeIcon() {
+  return L.divIcon({
+    className: 'plane',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    html: '<svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="#ffff00" stroke="#102060" stroke-width="1"/></svg>',
+  });
+}
+function drawRouteLines(layer, now, chain) {
+  const t = now.getTime();
+  chain.legs.forEach((leg) => {
+    const from = AIRPORTS[leg.from];
+    const to = AIRPORTS[leg.to];
+    if (!from || !to) return;
+    const path = greatCircle(from, to, 72);
+    const dep = new Date(leg.depart).getTime();
+    const arr = new Date(leg.arrive).getTime();
+    let frac = 0;
+    if (t >= arr) frac = 1;
+    else if (t > dep) frac = (t - dep) / (arr - dep || 1);
+    const cut = Math.round(frac * (path.length - 1));
+    const done = path.slice(0, cut + 1);
+    const rest = path.slice(cut);
+    const hot = chain.active && leg.flight === chain.active.flight;
+    if (done.length > 1) {
+      L.polyline(done, { color: '#ffb000', weight: hot ? 10 : 7, opacity: 0.35 }).addTo(layer);
+      L.polyline(done, { color: '#ffb000', weight: hot ? 4 : 3, opacity: 1 }).addTo(layer);
+    }
+    if (rest.length > 1) {
+      L.polyline(rest, { color: '#8fd0ff', weight: hot ? 3 : 2, opacity: 0.95, dashArray: '8 10' }).addTo(layer);
+    }
+  });
+}
+function drawAirportLabels(layer, legs) {
+  const seen = new Set();
+  legs.forEach((leg) => {
+    [leg.from, leg.to].forEach((code) => {
+      if (seen.has(code)) return;
+      seen.add(code);
+      const ap = AIRPORTS[code];
+      if (!ap) return;
+      L.circleMarker([ap.lat, ap.lon], { radius: 6, color: '#e8862a', weight: 2, fillColor: '#ffff00', fillOpacity: 1, interactive: false }).addTo(layer);
+      L.tooltip({ permanent: true, direction: 'top', offset: [0, -10], className: 'apt-label', opacity: 1 })
+        .setLatLng([ap.lat, ap.lon])
+        .setContent(code + ' ' + (CITY_NAME[code] || code))
+        .addTo(layer);
+    });
+  });
+}
+function fitActive(map, chain) {
+  if (!map || !chain.active) return;
+  const box = map.getContainer();
+  const open = document.body.classList.contains('map-open');
+  if (box.offsetWidth < 40 || box.offsetHeight < 40) return;
+  if (open && box.offsetHeight < 180) return;
+  const key = chain.legs.map((leg) => leg.flight).join('-') + ':' + chain.active.flight + (open ? ':open' : ':pin') + ':' + box.offsetWidth + 'x' + box.offsetHeight;
+  if (map._fitKey === key) return;
+  const points = [];
+  const add = (code) => { const ap = AIRPORTS[code]; if (ap) points.push([ap.lat, ap.lon]); };
+  if (open) chain.legs.forEach((leg) => { add(leg.from); add(leg.to); });
+  else { add(chain.active.from); add(chain.active.to); }
+  if (points.length < 2) return;
+  map._fitKey = key;
+  map.invalidateSize();
+  map.fitBounds(points, { padding: open ? [28, 28] : [16, 16], maxZoom: open ? 5 : 5 });
+}
+function updatePlane(fix) {
+  if (!pinMap || !fix) {
+    if (planeMarker) { planeMarker.remove(); planeMarker = null; }
+    return;
+  }
+  if (!planeMarker) planeMarker = L.marker([fix.lat, fix.lon], { icon: planeIcon(), interactive: false, zIndexOffset: 800 }).addTo(pinMap);
+  else planeMarker.setLatLng([fix.lat, fix.lon]);
+  const el = planeMarker.getElement();
+  const svg = el && el.querySelector('svg');
+  if (svg) svg.style.transform = 'rotate(' + (fix.heading || 0) + 'deg)';
+}
+function paintMapStats(now) {
+  const chain = activeChain(now);
+  const leg = chain.active;
+  const pos = planeNow(now);
+  const flight = document.getElementById('ms-flight');
+  if (!flight || !leg) return;
+  const t = now.getTime();
+  const dep = new Date(leg.depart).getTime();
+  const arr = new Date(leg.arrive).getTime();
+  const live = !!(pos.live && pos.fix);
+  const inAir = t >= dep && t < arr;
+  const miles = pos.fix ? haversineMi(pos.fix, AIRPORTS[leg.to] || pos.fix) : null;
+  flight.textContent = leg.flight;
+  document.getElementById('ms-src').textContent = live ? 'LIVE' : (inAir ? 'EST' : 'APT');
+  const alt = pos.fix && typeof pos.fix.alt === 'number' ? Math.round(pos.fix.alt).toLocaleString('en-US') + ' FT' : '—';
+  const gs = pos.fix && typeof pos.fix.gs === 'number' ? Math.round(pos.fix.gs) + ' KT' : '—';
+  document.getElementById('ms-alt').textContent = 'ALT ' + alt;
+  document.getElementById('ms-gs').textContent = 'GS ' + gs;
+  document.getElementById('ms-mi').textContent = miles == null ? '— MI' : Math.round(miles).toLocaleString('en-US') + ' MI';
+  document.getElementById('ms-eta').textContent = 'ARV ' + hm(leg.arrive, leg.arriveZone);
+  let togo = 'TO GO —';
+  let progress = 0;
+  if (inAir) { togo = 'TO GO ' + shortRemain(arr - t); progress = (t - dep) / (arr - dep || 1); }
+  else if (t < dep) { togo = 'DEPARTS ' + shortRemain(dep - t); progress = 0; }
+  else { togo = 'LANDED'; progress = 1; }
+  document.getElementById('ms-togo').textContent = togo;
+  document.getElementById('ms-fill').style.width = Math.round(progress * 100) + '%';
+}
+function refreshTracker() {
+  const now = nowDate();
+  paintMapStats(now);
+  if (!pinMap) return;
+  const chain = activeChain(now);
+  const key = chain.legs.map((leg) => leg.flight).join(',');
+  if (!routeLayer) routeLayer = L.layerGroup().addTo(pinMap);
+  routeLayer.clearLayers();
+  drawRouteLines(routeLayer, now, chain);
+  if (key !== labelKey) {
+    if (labelLayer) labelLayer.remove();
+    labelLayer = L.layerGroup().addTo(pinMap);
+    drawAirportLabels(labelLayer, chain.legs);
+    labelKey = key;
+  }
+  updatePlane(planeNow(now).fix);
+  fitActive(pinMap, chain);
+}
+function setMapOpen(open) {
+  document.body.classList.toggle('map-open', !!open);
+  if (!pinMap) return;
+  if (open) pinMap.dragging.enable();
+  else pinMap.dragging.disable();
+  pinMap._fitKey = '';
+  setTimeout(() => { pinMap.invalidateSize(); refreshTracker(); }, 220);
 }
 async function fetchLive(callsign) {
   for (const base of LIVE_URLS) {
@@ -878,13 +924,22 @@ async function pollLive() {
   refreshTracker();
 }
 function bootMaps() {
-  if (!window.L) {
-    const box = document.getElementById('map-panel');
+  const box = document.getElementById('map-pin-canvas');
+  if (!window.L || !box) {
     if (box) box.textContent = 'MAP N/A';
     return;
   }
-  panelMap = makeMap('map-panel');
-  mainMap = makeMap('map-main');
+  pinMap = L.map(box, {
+    zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false,
+  });
+  const esriAttr = '&copy; Esri, OSM';
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16, attribution: esriAttr,
+  }).addTo(pinMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16, pane: 'overlayPane',
+  }).addTo(pinMap);
+  pinMap.on('click', () => setMapOpen(!document.body.classList.contains('map-open')));
   refreshTracker();
 }
 function setupScroll() {
@@ -898,21 +953,8 @@ function setupScroll() {
   const clone = sheet.cloneNode(true);
   clone.id = 'panel-sheet-clone';
   clone.setAttribute('aria-hidden', 'true');
-  clone.querySelectorAll('[id]').forEach((el) => {
-    if (el.id === 'map-panel') el.id = 'map-panel-clone';
-    else el.removeAttribute('id');
-  });
+  clone.querySelectorAll('[id]').forEach((el) => { el.removeAttribute('id'); });
   document.getElementById('panel-track').appendChild(clone);
-  let cloneMap = null;
-  let cloneLayers = null;
-  if (window.L && !trackerOff) cloneMap = makeMap('map-panel-clone');
-  const paint = refreshTracker;
-  refreshTracker = function synced() {
-    paint();
-    if (!cloneMap) return;
-    const view = currentFix();
-    cloneLayers = drawMap(cloneMap, cloneLayers, view.fix);
-  };
   let y = 0;
   let lastTs = 0;
   let pauseUntil = 0;
@@ -945,7 +987,7 @@ function mirrorText() {
   src.forEach((el, idx) => { if (dst[idx]) dst[idx].innerHTML = el.innerHTML; });
 }
 
-function tick() { paintClock(); paintTrip(); if (!trackerOff) refreshTracker(); mirrorText(); }
+function tick() { paintClock(); paintTrip(); paintFlightBar(); if (!trackerOff) refreshTracker(); mirrorText(); }
 tick();
 setInterval(tick, 1000);
 paintAsuncion();
@@ -956,7 +998,7 @@ if (!trackerOff) {
   const leaflet = document.createElement('script');
   leaflet.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
   leaflet.onload = () => { bootMaps(); setupScroll(); pollLive(); setInterval(pollLive, 45000); };
-  leaflet.onerror = () => { document.getElementById('map-panel').textContent = 'MAP N/A'; setupScroll(); };
+  leaflet.onerror = () => { const box = document.getElementById('map-pin-canvas'); if (box) box.textContent = 'MAP N/A'; setupScroll(); };
   document.body.appendChild(leaflet);
 } else setupScroll();
 rotationLoop();
@@ -1077,16 +1119,31 @@ function playYouTubeItem(item, token) {
             onReady: (event) => {
               mine = event.target;
               channelPlayer = event.target;
+              const frame = event.target.getIframe && event.target.getIframe();
+              if (frame) {
+                frame.setAttribute('playsinline', '');
+                frame.setAttribute('webkit-playsinline', '');
+                frame.removeAttribute('allowfullscreen');
+                const allow = (frame.getAttribute('allow') || '').split(';').map((part) => part.trim()).filter((part) => part && !/fullscreen/i.test(part));
+                frame.setAttribute('allow', allow.join('; '));
+              }
               const box = document.getElementById('ch-yt-host');
               try { event.target.setSize(box.clientWidth, box.clientHeight); } catch (e) { /* size */ }
-              try { event.target.unMute(); event.target.setVolume(100); event.target.playVideo(); } catch (e) { /* 8s skip */ }
+              if (channelMutedChoice()) {
+                try { event.target.mute(); event.target.playVideo(); } catch (e) { /* 8s skip */ }
+                showSoundCatch(false);
+              } else {
+                try { event.target.unMute(); event.target.setVolume(100); event.target.playVideo(); } catch (e) { /* 8s skip */ }
+              }
               setTimeout(() => {
-                if (settled || token !== channelToken) return;
+                if (settled || token !== channelToken || channelMutedChoice()) return;
                 let state = -1;
                 try { state = event.target.getPlayerState(); } catch (e) { state = -1; }
+                let muted = false;
+                try { muted = event.target.isMuted(); } catch (e) { muted = true; }
                 if (state !== 1 && state !== 3) {
-                  try { event.target.mute(); event.target.playVideo(); sound.hidden = false; } catch (e) { /* skip */ }
-                }
+                  try { event.target.mute(); event.target.playVideo(); showSoundCatch(true); } catch (e) { /* skip */ }
+                } else showSoundCatch(muted);
               }, 1500);
             },
             onStateChange: (event) => {
@@ -1095,7 +1152,8 @@ function playYouTubeItem(item, token) {
                 clearTimeout(startTimer);
                 let muted = false;
                 try { muted = event.target.isMuted(); } catch (e) { muted = false; }
-                sound.hidden = !muted;
+                sound.hidden = true;
+                if (!channelMutedChoice()) showSoundCatch(muted);
               } else if (event.data === YT.PlayerState.ENDED) {
                 clearTimeout(hideCard);
                 if (item.artist) {
@@ -1171,6 +1229,46 @@ async function runChannel(ch) {
     if (channelIndex % channelQueue.length === 0) channelQueue = shuffleCopy(channelQueue);
   }
 }
+function channelMutedChoice() {
+  try { return localStorage.getItem('landoChannelMuted') === '1'; } catch (e) { return false; }
+}
+function paintMuteButton() {
+  const muted = channelMutedChoice();
+  const btn = document.getElementById('ch-mute');
+  if (!btn) return;
+  btn.textContent = muted ? 'MUTED' : 'SND';
+  btn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+}
+function setChannelMutedChoice(muted) {
+  try { localStorage.setItem('landoChannelMuted', muted ? '1' : '0'); } catch (e) { /* private mode */ }
+  paintMuteButton();
+}
+function showSoundCatch(on) {
+  const el = document.getElementById('ch-unlock');
+  if (el) el.hidden = !on;
+}
+function unlockChannelSound() {
+  if (channelMutedChoice()) return;
+  setChannelMutedChoice(false);
+  showSoundCatch(false);
+  if (channelPlayer) {
+    try { channelPlayer.unMute(); channelPlayer.setVolume(100); channelPlayer.playVideo(); } catch (e) { /* stay muted */ }
+  }
+}
+function toggleChannelMute() {
+  const next = !channelMutedChoice();
+  setChannelMutedChoice(next);
+  showSoundCatch(false);
+  if (!channelPlayer) return;
+  try {
+    if (next) channelPlayer.mute();
+    else { channelPlayer.unMute(); channelPlayer.setVolume(100); channelPlayer.playVideo(); }
+  } catch (e) { /* player gone */ }
+}
+function paintDock(ch) {
+  document.getElementById('ch-num').textContent = String(ch.number).padStart(2, '0');
+  document.getElementById('ch-name').textContent = ch.kind === 'weather' ? 'WEATHER' : ch.name;
+}
 function flashTune(ch) {
   const stat = document.getElementById('tv-static');
   const osd = document.getElementById('osd');
@@ -1182,29 +1280,23 @@ function flashTune(ch) {
   clearTimeout(flashTune.timer);
   flashTune.timer = setTimeout(() => { osd.hidden = true; }, 2800);
 }
-let padTimer = null;
-function pokePad() {
-  const pad = document.getElementById('ch-pad');
-  pad.classList.add('show');
-  clearTimeout(padTimer);
-  padTimer = setTimeout(() => pad.classList.remove('show'), 4000);
-}
 function tune(number, first) {
   const ch = channelByNumber(number);
   if (!ch) return;
-  const changed = number !== channelNumber || first;
   channelNumber = ch.number;
   try { localStorage.setItem('landoLoungeChannel', String(ch.number)); } catch (e) { /* private mode */ }
   document.body.classList.toggle('is-weather', ch.kind === 'weather');
+  paintDock(ch);
+  if (ch.kind === 'weather') document.body.classList.remove('map-open');
   if (!first) flashTune(ch);
-  pokePad();
   if (ch.kind === 'weather') {
     stopChannelPlayback();
+    showSoundCatch(false);
     releaseFromChannel();
     document.getElementById('adbreak').hidden = true;
+    if (pinMap) setTimeout(() => { pinMap.invalidateSize(); pinMap._fitKey = ''; refreshTracker(); }, 80);
   } else {
     document.getElementById('adbreak').hidden = true;
-    document.getElementById('flight-segment').hidden = true;
     holdForChannel();
     runChannel(ch);
   }
@@ -1216,8 +1308,16 @@ function tuneRel(dir) {
   if (idx < 0) idx = 0;
   tune(list[(idx + dir + list.length) % list.length].number, false);
 }
-document.getElementById('ch-up').addEventListener('click', () => tuneRel(1));
-document.getElementById('ch-down').addEventListener('click', () => tuneRel(-1));
+document.getElementById('ch-up').addEventListener('click', () => { unlockChannelSound(); tuneRel(1); });
+document.getElementById('ch-down').addEventListener('click', () => { unlockChannelSound(); tuneRel(-1); });
+document.getElementById('ch-home').addEventListener('click', () => { unlockChannelSound(); tune(8); });
+document.getElementById('ch-mute').addEventListener('click', () => toggleChannelMute());
+document.getElementById('ch-unlock').addEventListener('click', () => unlockChannelSound());
+document.getElementById('map-pin').addEventListener('click', (event) => {
+  if (event.target.closest('#map-close')) { setMapOpen(false); return; }
+  if (event.target.closest('#map-pin-canvas')) return;
+  setMapOpen(!document.body.classList.contains('map-open'));
+});
 window.addEventListener('keydown', (event) => {
   const code = event.keyCode || event.which;
   const up = event.key === 'ArrowUp' || event.key === 'PageUp' || event.key === 'ChannelUp' || code === 427;
@@ -1230,7 +1330,6 @@ let swipeY = null;
 window.addEventListener('touchstart', (event) => {
   const t = event.changedTouches[0] || event.touches[0];
   swipeY = t ? t.clientY : null;
-  pokePad();
 }, { passive: true });
 window.addEventListener('touchend', (event) => {
   if (swipeY == null) return;
@@ -1241,12 +1340,12 @@ window.addEventListener('touchend', (event) => {
   if (Math.abs(dy) < 70) return;
   tuneRel(dy < 0 ? 1 : -1);
 });
-window.addEventListener('pointermove', pokePad);
-document.getElementById('ch-sound').addEventListener('click', () => {
-  if (!channelPlayer) return;
-  try { channelPlayer.unMute(); channelPlayer.setVolume(100); channelPlayer.playVideo(); } catch (e) { /* stay muted */ }
-  document.getElementById('ch-sound').hidden = true;
-});
+document.getElementById('ch-sound').addEventListener('click', () => unlockChannelSound());
+window.addEventListener('pointerdown', (event) => {
+  if (event.target.closest && event.target.closest('#ch-mute')) return;
+  unlockChannelSound();
+}, true);
+paintMuteButton();
 (function initChannel() {
   const list = channelList();
   const fromQuery = parseInt(qs.get('ch'), 10);
