@@ -14,9 +14,9 @@ Cedar Park is the station that comes up first. Austin shows on the Cedar Park re
 4. Launch **Weather Lounge** from the Home Screen. It opens full screen on the kiosk.
 5. Tap once when you see **TAP FOR MUSIC**. Safari will not start the music until you do. That tap is remembered by the kiosk page, so the music keeps playing when the city changes.
 
-`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off. `?panel=false` hides the side panel. `?ads=false` skips the commercial breaks. `?tracker=false` hides the flight map. `?scroll=false` stops the side panel from scrolling. `?ch=25` tunes a channel (arrow keys, page keys, channel keys, or a swipe). Channel 8 is the lounge. The side panel stays on that channel only.
+`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off. `?panel=false` hides the side panel. `?ads=false` skips the commercial breaks. `?tracker=false` hides the flight map. `?scroll=false` stops the side panel from scrolling. `?ch=25` tunes a channel. Channel 8 is the lounge. The side panel stays on that channel only. Channel buttons stay on screen on every channel, including over a video.
 
-The right side stays up during the forecast and during commercials. It scrolls the Paraguay trip, the flight tracker, Asunción right now, and Cedar Park sun, moon, air quality, and UV. The public page never includes a booking code, passenger name, or seat.
+A one-line flight status stays pinned across the top on every channel. On channel 8 the side panel scrolls the countdown, the next leg, the hotel, Asunción, and Cedar Park. The flight map is a small tile on the forecast; tap it to open the moving map. The public page never includes a booking code, passenger name, or seat.
 
 ## AirPlay it to an Apple TV
 
@@ -33,6 +33,7 @@ The right side stays up during the forecast and during commercials. It scrolls t
 | Channel lineups | [`lando/channels.js`](lando/channels.js) |
 | The Asunción screen | [`lando/asuncion.html`](lando/asuncion.html) |
 | The bumper, CRT overlay, side panel, tracker, commercials, and rotation | [`lando/lando.html`](lando/lando.html) |
+| Kiosk styling | [`lando/lando.css`](lando/lando.css) |
 | Home Screen name and icon | [`lando/lando.webmanifest`](lando/lando.webmanifest), [`lando/lando-icon.png`](lando/lando-icon.png) |
 | Music | `vendor/ws4kp/server/music/` |
 
