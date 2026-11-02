@@ -11,7 +11,7 @@
 <link rel="icon" href="lando-icon.png">
 <link rel="apple-touch-icon" href="lando-icon.png">
 <link rel="manifest" href="lando.webmanifest">
-<link rel="stylesheet" href="lando.css?v=20261103d">
+<link rel="stylesheet" href="lando.css?v=20261103e">
 <script src="channels.js?v=20261103b"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="lando-config.js?v=20261103b"></script>
@@ -504,14 +504,14 @@ function paintTrip() {
     state.textContent = 'DEPARTS IN';
     big.textContent = remain(first - now);
   } else if (mode === 'enroute') {
-    state.textContent = 'EN ROUTE';
-    big.textContent = leg.flight + '  ' + leg.from + ' → ' + leg.to + '\nLANDS IN  ' + remain(new Date(leg.arrive) - now);
+    state.textContent = 'LANDS IN';
+    big.textContent = remain(new Date(leg.arrive) - now);
   } else if (mode === 'layover') {
-    state.textContent = 'LAYOVER';
-    big.textContent = (leg.layover ? leg.layover + '\n' : '') + remain(new Date(leg.depart) - now);
+    state.textContent = leg.layover ? 'LAYOVER ' + leg.layover : 'LAYOVER';
+    big.textContent = remain(new Date(leg.depart) - now);
   } else if (mode === 'return-count') {
-    state.textContent = 'IN PARAGUAY - DAY ' + dayNumber(lastArr, now);
-    big.textContent = returns[0].flight + ' IN\n' + remain(returnDepart - now);
+    state.textContent = returns[0].flight + ' IN';
+    big.textContent = remain(returnDepart - now);
   } else if (mode === 'home') {
     state.textContent = 'WELCOME HOME';
     big.textContent = 'AUS';
@@ -521,7 +521,7 @@ function paintTrip() {
   }
   const focus = focusLeg(mode, leg, legs, returns);
   document.getElementById('leg-now').innerHTML = focus
-    ? '<div class="kicker">' + esc(focus.kicker) + '</div><b>' + esc(focus.leg.flight) + '</b> ' + esc(focus.leg.from) + ' ' + hm(focus.leg.depart, focus.leg.departZone) + ' → ' + esc(focus.leg.to) + ' ' + hm(focus.leg.arrive, focus.leg.arriveZone)
+    ? '<div class="kicker">' + esc(focus.kicker) + '</div> <b>' + esc(focus.leg.flight) + '</b> ' + esc(focus.leg.from) + ' ' + hm(focus.leg.depart, focus.leg.departZone) + ' → ' + esc(focus.leg.to) + ' ' + hm(focus.leg.arrive, focus.leg.arriveZone)
     : '';
   const hotel = C.trip.hotel;
   document.getElementById('trip-hotel').textContent = hotel ? 'HOTEL ' + hotel.name.toUpperCase() + '  ' + hotel.dates : '';
@@ -991,6 +991,49 @@ function bootMaps() {
   pinMap.on('click', () => setMapOpen(!document.body.classList.contains('map-open')));
   refreshTracker();
 }
+function lineTops(root) {
+  const origin = root.getBoundingClientRect().top;
+  const tops = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return node.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    },
+  });
+  const range = document.createRange();
+  while (walker.nextNode()) {
+    const text = walker.currentNode;
+    const value = text.textContent;
+    let last = null;
+    for (let i = 0; i < value.length; i += 1) {
+      if (value[i] === '\n' || value[i] === ' ') continue;
+      range.setStart(text, i);
+      range.setEnd(text, i + 1);
+      const rect = range.getClientRects()[0];
+      if (!rect || rect.height < 1) continue;
+      const top = Math.round(rect.top - origin);
+      if (last == null || top - last > 3) {
+        tops.push(Math.max(0, top));
+        last = top;
+      }
+    }
+  }
+  return tops;
+}
+function crawlStops(sheet, viewH) {
+  const stops = new Set([0]);
+  [...sheet.children].forEach((sec) => {
+    const top = sec.offsetTop;
+    const height = sec.offsetHeight;
+    if (top > 2) stops.add(top);
+    if (height > viewH + 1) {
+      lineTops(sec).forEach((line) => {
+        const y = top + line;
+        if (y > top + 2 && y < top + height - 8) stops.add(y);
+      });
+    }
+  });
+  return [...stops].sort((a, b) => a - b);
+}
 function setupScroll() {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const viewport = document.getElementById('panel-viewport');
@@ -1003,28 +1046,21 @@ function setupScroll() {
   clone.id = 'panel-sheet-clone';
   clone.setAttribute('aria-hidden', 'true');
   clone.querySelectorAll('[id]').forEach((el) => { el.removeAttribute('id'); });
-  document.getElementById('panel-track').appendChild(clone);
+  const track = document.getElementById('panel-track');
+  track.appendChild(clone);
   let y = 0;
-  let lastTs = 0;
-  let pauseUntil = 0;
-  const seen = new Set();
+  let holdUntil = Infinity;
   const step = (ts) => {
-    if (!lastTs) lastTs = ts;
-    const dt = Math.min(0.05, (ts - lastTs) / 1000);
-    lastTs = ts;
-    const h = sheet.offsetHeight;
-    if (h > 10 && ts >= pauseUntil) {
-      y += 20 * dt;
-      if (y >= h) { y -= h; seen.clear(); }
-      sheet.querySelectorAll('.sec-head').forEach((head, idx) => {
-        if (seen.has(idx)) return;
-        if (Math.abs(y - head.offsetTop) < 2.5) {
-          seen.add(idx);
-          pauseUntil = ts + 3000;
-          y = head.offsetTop;
-        }
-      });
-      document.getElementById('panel-track').style.transform = 'translateY(' + (-y) + 'px)';
+    const contentH = viewport.clientHeight - parseFloat(getComputedStyle(viewport).paddingTop) - parseFloat(getComputedStyle(viewport).paddingBottom);
+    const sheetH = sheet.offsetHeight;
+    if (holdUntil === Infinity) holdUntil = ts + 5000;
+    if (contentH > 1 && sheetH > contentH + 8 && ts >= holdUntil) {
+      const stops = crawlStops(sheet, contentH);
+      const next = stops.find((top) => top > y + 2 && top < sheetH - 4);
+      y = next == null ? 0 : next;
+      track.style.transform = 'translateY(' + (-y) + 'px)';
+      const onHead = y === 0 || [...sheet.querySelectorAll('.sec-head, .clock-block')].some((head) => Math.abs(head.offsetTop - y) < 3);
+      holdUntil = ts + (onHead ? 5000 : 2600);
     }
     requestAnimationFrame(step);
   };
