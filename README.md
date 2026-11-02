@@ -14,7 +14,9 @@ Cedar Park is the station that comes up first. Austin shows on the Cedar Park re
 4. Launch **Lando WX** from the Home Screen. It opens full screen on the kiosk.
 5. Tap once when you see **TAP FOR MUSIC**. Safari will not start the music until you do. That tap is remembered by the kiosk page, so the music keeps playing when the city changes.
 
-`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off.
+`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off. `?panel=false` hides the side panel. `?ads=false` skips the commercial breaks.
+
+The right side of the screen stays up during the forecast and during commercials: the Paraguay trip, today's and tomorrow's schedule, and Cedar Park sun, moon, air quality, and UV. Open the schedule with a link that ends in `#k=` and the key you were given. The key stays on this device after that. The public page never includes a booking code, passenger name, or seat.
 
 ## AirPlay it to an Apple TV
 
@@ -27,9 +29,10 @@ Cedar Park is the station that comes up first. Austin shows on the Cedar Park re
 
 | What | Where |
 | --- | --- |
-| Cities, how long each one stays, the ticker, and which WeatherStar screens play | [`lando/lando-config.js`](lando/lando-config.js) |
+| Cities, ticker, trip times, and the commercial list | [`lando/lando-config.js`](lando/lando-config.js) |
 | The Asunción screen | [`lando/asuncion.html`](lando/asuncion.html) |
-| The bumper, CRT overlay, and rotation | [`lando/lando.html`](lando/lando.html) |
+| The bumper, CRT overlay, side panel, commercials, and rotation | [`lando/lando.html`](lando/lando.html) |
+| Encrypted schedule | [`data/schedule.enc.json`](data/schedule.enc.json), built with [`scripts/encrypt-schedule.mjs`](scripts/encrypt-schedule.mjs) |
 | Home Screen name and icon | [`lando/lando.webmanifest`](lando/lando.webmanifest), [`lando/lando-icon.png`](lando/lando-icon.png) |
 | Music | `vendor/ws4kp/server/music/` |
 
