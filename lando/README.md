@@ -4,9 +4,11 @@ These files are copied onto the built WeatherStar site by `scripts/assemble-site
 
 - Cities, rotation time, ticker text, and WeatherStar display flags: `lando/lando-config.js`
 - Asuncion screen (Open-Meteo, °F): `lando/asuncion.html`
-- Bumper, CRT overlay, and rotation wrapper: `lando/lando.html`
+- Bumper, CRT overlay, rotation, and the music player: `lando/lando.html`
   - `?crt=false` turns the overlay off
   - `?rotate=SECONDS` changes how long each city stays on screen
+  - `?music=false` disables the kiosk music
+  - Music is a single `<audio>` on this page, fed by `playlist.json`. It is not inside the forecast iframe, so a city change does not stop it. WeatherStar's own player stays off (`mediaPlaying=false`).
 - Home Screen name and icon: `lando/lando.webmanifest` and `lando/lando-icon.png`
 - Music: put `.mp3` files directly in `vendor/ws4kp/server/music/` (not in a subfolder) and rebuild. If that folder has no mp3s, the four royalty-free tracks in `server/music/default/` are used.
 - Austin is a travel city in `vendor/ws4kp/datagenerators/output/travelcities.json` and a regional city in `regionalcities.json`. Cedar Park stays the first station in the rotation.

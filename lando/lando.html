@@ -12,18 +12,26 @@
 <link rel="manifest" href="lando.webmanifest">
 <script src="lando-config.js"></script>
 <style>
+@font-face{font-family:Star4000;src:url("fonts/Star4000.woff") format("woff");font-display:swap}
 html,body{margin:0;height:100%;background:#000;overflow:hidden}
 iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 #bump{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#1b1464,#2e4bb8 60%,#c75a12);color:#fff;font:bold 6vw Arial,sans-serif;text-shadow:4px 4px #000;z-index:9;transition:opacity 1s}
 #bump small{font-size:2.6vw;color:#ffb000}
-#tap{font-size:2vw;margin-top:3vh;color:#ddd}
 #crt{pointer-events:none;position:fixed;inset:0;z-index:8;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 12vw rgba(0,0,0,.6)}
+/* Sits above the iframe and the bumper so the first tap is the parent's, even on iOS. */
+#music-catch{position:fixed;inset:0;z-index:30;background:transparent;cursor:pointer;touch-action:manipulation}
+#music-hint{position:fixed;right:2vw;bottom:2.5vh;z-index:31;pointer-events:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(10,20,90,.82);border:3px solid #e8862a;color:#ffb000;font:bold 18px Star4000,Arial,sans-serif;letter-spacing:.06em;text-shadow:2px 2px #000}
+#music-hint svg{display:block;flex:none}
+#music-hint[hidden]{display:none}
 </style>
 </head>
 <body>
-<iframe id="f" title="Local forecast" allow="autoplay; fullscreen"></iframe>
+<iframe id="f" title="Local forecast" allow="fullscreen"></iframe>
 <div id="crt"></div>
-<div id="bump">THE LANDO<br>WEATHER CHANNEL<small id="bn">LOCAL ON THE 8s</small><div id="tap">tap anywhere for sound</div></div>
+<div id="bump">THE LANDO<br>WEATHER CHANNEL<small id="bn">LOCAL ON THE 8s</small></div>
+<audio id="music" preload="auto" playsinline></audio>
+<div id="music-catch" aria-hidden="true"></div>
+<div id="music-hint"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#ffb000" d="M3 9v6h4l5 4V5L7 9H3z"/><path fill="none" stroke="#ffb000" stroke-width="2" stroke-linecap="round" d="M16.5 9a3.5 3.5 0 010 6M19 6.5a7 7 0 010 11"/></svg>TAP FOR MUSIC</div>
 <script>
 const C = window.LANDO;
 const qs = new URLSearchParams(location.search);
@@ -48,11 +56,11 @@ function show() {
   b.style.pointerEvents = 'auto';
   b.style.opacity = 1;
   setTimeout(() => {
+    // Reloading the iframe must not touch #music. The player lives on this page
+    // so a city change does not drop iOS user activation.
     f.src = url(s);
     setTimeout(() => {
       b.style.opacity = 0;
-      // The faded bumper would otherwise sit over the forecast and swallow the tap
-      // that starts the music (autoplay is blocked until a gesture reaches the page).
       b.style.pointerEvents = 'none';
     }, 2500);
   }, 1200);
@@ -61,6 +69,136 @@ function show() {
 
 show();
 setInterval(show, (+qs.get('rotate') || C.rotateSeconds) * 1000);
+
+// ---- kiosk music: one audio element, outside the rotating iframe ----
+const musicOff = qs.get('music') === 'false';
+const audio = document.getElementById('music');
+const catcher = document.getElementById('music-catch');
+const hint = document.getElementById('music-hint');
+let tracks = [];
+let trackIndex = 0;
+let ignorePause = false;
+let unlocked = false;
+let errorStreak = 0;
+
+function hideUnlock() {
+  if (catcher.isConnected) catcher.remove();
+  hint.hidden = true;
+}
+
+function showUnlock() {
+  if (!catcher.isConnected) document.body.appendChild(catcher);
+  hint.hidden = false;
+}
+
+if (musicOff) {
+  hideUnlock();
+  audio.remove();
+} else {
+  audio.volume = 0.75;
+
+  function trackUrl(file) {
+    const parts = String(file).split('/').filter((part) => part && part !== '.' && part !== '..');
+    return 'music/' + parts.map((part) => encodeURIComponent(part)).join('/');
+  }
+
+  function shuffle(list) {
+    const a = list.slice();
+    for (let n = a.length - 1; n > 0; n -= 1) {
+      const j = Math.floor(Math.random() * (n + 1));
+      const swap = a[n];
+      a[n] = a[j];
+      a[j] = swap;
+    }
+    return a;
+  }
+
+  function playIndex(index) {
+    if (!tracks.length) return;
+    trackIndex = ((index % tracks.length) + tracks.length) % tracks.length;
+    const next = trackUrl(tracks[trackIndex]);
+    const absolute = new URL(next, location.href).href;
+    ignorePause = true;
+    if (audio.src !== absolute) audio.src = next;
+    else if (audio.ended || !audio.currentTime) audio.currentTime = 0;
+    audio.volume = 0.75;
+    const pending = audio.play();
+    if (pending && pending.then) {
+      pending.catch(() => {
+        ignorePause = false;
+        showUnlock();
+      });
+    } else {
+      ignorePause = false;
+    }
+  }
+
+  function onGesture() {
+    unlocked = true;
+    if (!audio.paused && audio.currentTime > 0) return;
+    playIndex(trackIndex);
+  }
+
+  catcher.addEventListener('pointerdown', onGesture);
+  catcher.addEventListener('touchend', onGesture);
+  catcher.addEventListener('click', onGesture);
+  window.addEventListener('keydown', (event) => {
+    if (event.repeat) return;
+    onGesture();
+  });
+
+  audio.addEventListener('playing', () => {
+    ignorePause = false;
+    errorStreak = 0;
+    hideUnlock();
+  });
+
+  audio.addEventListener('pause', () => {
+    // ended also pauses; the ended handler advances the playlist. A pause in
+    // between tracks, or from assigning src, must not bring the tap layer back.
+    const atEnd = Number.isFinite(audio.duration) && audio.currentTime >= audio.duration - 0.3;
+    if (!unlocked || ignorePause || audio.ended || atEnd) return;
+    showUnlock();
+  });
+
+  audio.addEventListener('ended', () => {
+    playIndex(trackIndex + 1);
+  });
+
+  audio.addEventListener('error', () => {
+    errorStreak += 1;
+    if (!tracks.length || errorStreak > tracks.length) {
+      showUnlock();
+      return;
+    }
+    const next = (trackIndex + 1) % tracks.length;
+    if (unlocked) playIndex(next);
+    else {
+      trackIndex = next;
+      ignorePause = true;
+      audio.src = trackUrl(tracks[trackIndex]);
+      ignorePause = false;
+    }
+  });
+
+  fetch('playlist.json')
+    .then((res) => {
+      if (!res.ok) throw new Error('playlist ' + res.status);
+      return res.json();
+    })
+    .then((data) => {
+      tracks = shuffle((data.availableFiles || []).filter(Boolean));
+      if (!tracks.length) return;
+      ignorePause = true;
+      audio.src = trackUrl(tracks[0]);
+      audio.volume = 0.75;
+      ignorePause = false;
+      if (unlocked) playIndex(0);
+    })
+    .catch(() => {
+      showUnlock();
+    });
+}
 </script>
 </body>
 </html>

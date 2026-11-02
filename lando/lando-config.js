@@ -10,5 +10,7 @@ window.LANDO = {
     { name: "Sarasota, FL",   query: "latLonQuery=Sarasota%2C+FL%2C+USA&latLon=%7B%22lat%22%3A27.3364%2C%22lon%22%3A-82.5307%7D" },
     { name: "Asuncion, PY",   page: "asuncion.html?lat=-25.2637&lon=-57.5759&name=ASUNCION" },
   ],
-  common: "hazards=true&current-weather=true&latest-observations=true&hourly=false&hourly-graph=true&travel=true&regional-forecast=true&local-forecast=true&extended-forecast=true&almanac=true&spc-outlook=false&radar=true&future-radar=false&kiosk=true&units=us&scanLines=true&scanLineMode=auto&mediaPlaying=true&mediaVolume=0.75&customTextEnable=true&speed=1.00",
+  // Music plays on the kiosk page, not in the forecast iframe. mediaPlaying=false
+  // keeps WeatherStar from starting a second player that iOS would silence on each rotation.
+  common: "hazards=true&current-weather=true&latest-observations=true&hourly=false&hourly-graph=true&travel=true&regional-forecast=true&local-forecast=true&extended-forecast=true&almanac=true&spc-outlook=false&radar=true&future-radar=false&kiosk=true&units=us&scanLines=true&scanLineMode=auto&mediaPlaying=false&mediaVolume=0&customTextEnable=true&speed=1.00",
 };
