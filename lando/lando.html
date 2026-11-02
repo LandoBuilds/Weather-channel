@@ -11,10 +11,10 @@
 <link rel="icon" href="lando-icon.png">
 <link rel="apple-touch-icon" href="lando-icon.png">
 <link rel="manifest" href="lando.webmanifest">
-<link rel="stylesheet" href="lando.css?v=20261102e">
-<script src="channels.js?v=20261102e"></script>
+<link rel="stylesheet" href="lando.css?v=20261103a">
+<script src="channels.js?v=20261103a"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="lando-config.js?v=20261102e"></script>
+<script src="lando-config.js?v=20261103a"></script>
 
 </head>
 <body class="is-weather">
@@ -45,6 +45,17 @@
     </div>
   </div>
   <aside id="panel" aria-label="Trip and local conditions">
+    <div id="map-pin">
+      <div id="map-pin-canvas" class="radar-map"></div>
+      <div id="map-stats">
+        <div class="row"><b id="ms-flight">—</b><span id="ms-src" hidden></span></div>
+        <div class="row" id="ms-live" hidden><span id="ms-alt">ALT —</span><span id="ms-gs">GS —</span></div>
+        <div class="row"><span id="ms-mi">— MI</span><span id="ms-eta">ARV —</span></div>
+        <div class="row"><span id="ms-togo">—</span></div>
+        <div id="ms-meter"><span id="ms-fill"></span></div>
+      </div>
+      <button type="button" id="map-close">CLOSE</button>
+    </div>
     <div id="panel-viewport">
       <div id="panel-track">
         <div class="panel-sheet" id="panel-sheet">
@@ -79,30 +90,21 @@
 </div>
 <div id="crt"></div>
 <div id="flight-bar" role="status"><div id="flight-line">FLIGHT</div><div id="flight-meter"><span id="flight-meter-fill"></span></div></div>
-<nav id="ch-dock" aria-label="Channels">
-  <button type="button" id="ch-up" aria-label="Channel up">CH ▲</button>
-  <div id="ch-readout"><span id="ch-num">08</span><span id="ch-name">WEATHER</span></div>
-  <button type="button" id="ch-down" aria-label="Channel down">CH ▼</button>
-  <button type="button" id="ch-home">CH 8 WEATHER</button>
-  <button type="button" id="ch-mute" aria-pressed="false">SND</button>
-</nav>
-<div id="map-pin">
-  <div id="map-pin-canvas" class="radar-map"></div>
-  <div id="map-stats">
-    <div class="row"><b id="ms-flight">—</b><span id="ms-src">EST</span></div>
-    <div class="row"><span id="ms-alt">ALT —</span><span id="ms-gs">GS —</span></div>
-    <div class="row"><span id="ms-mi">— MI</span><span id="ms-eta">ARV —</span></div>
-    <div class="row"><span id="ms-togo">—</span></div>
-    <div id="ms-meter"><span id="ms-fill"></span></div>
+<button type="button" id="ch-tab" aria-expanded="false" aria-controls="ch-menu">CH</button>
+<div id="ch-menu" hidden>
+  <div id="ch-list"></div>
+  <div class="ch-menu-nav">
+    <button type="button" id="ch-up" aria-label="Channel up"><svg viewBox="0 0 12 8" width="16" height="10" aria-hidden="true"><path d="M1 7h10L6 1z" fill="currentColor"/></svg></button>
+    <button type="button" id="ch-down" aria-label="Channel down"><svg viewBox="0 0 12 8" width="16" height="10" aria-hidden="true"><path d="M1 1h10L6 7z" fill="currentColor"/></svg></button>
+    <button type="button" id="ch-mute" aria-pressed="false">SOUND</button>
   </div>
-  <button type="button" id="map-close">CLOSE</button>
 </div>
 <div id="ch-unlock" hidden><span>TAP FOR SOUND</span></div>
 <div id="tv-static" hidden></div>
 <div id="osd" hidden><div class="num">08</div><div class="nm">LANDO'S WEATHER LOUNGE</div></div>
 <audio id="music" preload="auto" playsinline></audio>
 <div id="music-catch" aria-hidden="true"></div>
-<div id="music-hint"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#ffb000" d="M3 9v6h4l5 4V5L7 9H3z"/><path fill="none" stroke="#ffb000" stroke-width="2" stroke-linecap="round" d="M16.5 9a3.5 3.5 0 010 6M19 6.5a7 7 0 010 11"/></svg>TAP FOR MUSIC</div>
+<div id="music-hint" hidden>TAP FOR MUSIC</div>
 <script>
 const C = window.LANDO;
 const qs = new URLSearchParams(location.search);
@@ -175,7 +177,7 @@ function hideUnlock() {
 function showUnlock() {
   if (breakHold) return;
   if (!catcher.isConnected) document.body.appendChild(catcher);
-  hint.hidden = false;
+  hint.hidden = true;
 }
 function holdMusic() {
   breakHold = true;
@@ -241,6 +243,7 @@ if (musicOff) {
     if (!audio.paused && audio.currentTime > 0) return;
     playIndex(trackIndex);
   }
+  window.landoTapMusic = onGesture;
   catcher.addEventListener('pointerdown', onGesture);
   catcher.addEventListener('touchend', onGesture);
   catcher.addEventListener('click', onGesture);
@@ -248,7 +251,7 @@ if (musicOff) {
     if (event.repeat) return;
     onGesture();
   });
-  audio.addEventListener('playing', () => { ignorePause = false; errorStreak = 0; hideUnlock(); });
+  audio.addEventListener('playing', () => { ignorePause = false; errorStreak = 0; window.landoMusicOn = true; hideUnlock(); if (window.paintMuteButton) window.paintMuteButton(); });
   audio.addEventListener('pause', () => {
     const atEnd = Number.isFinite(audio.duration) && audio.currentTime >= audio.duration - 0.3;
     if (!unlocked || ignorePause || breakHold || channelHold || audio.ended || atEnd) return;
@@ -700,6 +703,19 @@ function shortRemain(ms) {
   if (hrs > 0) return hrs + 'h ' + String(min).padStart(2, '0') + 'm';
   return min + 'm';
 }
+function zoneTag(zone, date) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' }).formatToParts(date);
+  const raw = (parts.find((part) => part.type === 'timeZoneName') || {}).value || '';
+  if (raw === 'CST' || raw === 'CDT') return 'CT';
+  if (raw === 'EST' || raw === 'EDT') return 'ET';
+  if (raw === 'MST' || raw === 'MDT') return 'MT';
+  if (raw === 'PST' || raw === 'PDT') return 'PT';
+  return raw;
+}
+function clockIn(iso, zone) {
+  const date = new Date(iso);
+  return date.toLocaleTimeString('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit' }) + ' ' + zoneTag(zone, date);
+}
 function haversineMi(a, b) {
   const R = 3958.8;
   const dLat = toRad(b.lat - a.lat);
@@ -726,11 +742,13 @@ function flightBarInfo(now) {
   for (const leg of legs) {
     const dep = new Date(leg.depart).getTime();
     const arr = new Date(leg.arrive).getTime();
-    if (t < dep - TRACK_BUFFER_MS) return { flight: leg.flight, from: leg.from, to: leg.to, status: 'SCHEDULED', detail: shortRemain(dep - t), progress: 0 };
-    if (t < dep) return { flight: leg.flight, from: leg.from, to: leg.to, status: 'BOARDING', detail: shortRemain(dep - t), progress: 0 };
+    if (t < dep) {
+      const status = t < dep - TRACK_BUFFER_MS ? 'SCHEDULED' : 'BOARDING';
+      return { flight: leg.flight, from: leg.from, to: leg.to, status, detail: 'DEP ' + clockIn(leg.depart, leg.departZone) + ' · in ' + shortRemain(dep - t), progress: 0 };
+    }
     if (t < arr) {
       const live = liveFix && liveFlight === leg.flight;
-      return { flight: leg.flight, from: leg.from, to: leg.to, status: 'IN AIR', detail: 'ETA ' + shortRemain(arr - t) + (live ? '  LIVE' : '  EST'), progress: (t - dep) / (arr - dep || 1) };
+      return { flight: leg.flight, from: leg.from, to: leg.to, status: 'IN AIR', detail: 'ETA ' + shortRemain(arr - t) + (live ? ' · LIVE' : ' · EST'), progress: (t - dep) / (arr - dep || 1) };
     }
   }
   const last = legs[legs.length - 1];
@@ -742,7 +760,7 @@ function paintFlightBar() {
   const line = document.getElementById('flight-line');
   const fill = document.getElementById('flight-meter-fill');
   if (!info) { line.textContent = 'NO FLIGHT'; fill.style.width = '0'; return; }
-  line.textContent = info.flight + '  ' + info.from + '→' + info.to + '  ·  ' + info.status + '  ·  ' + info.detail;
+  line.textContent = info.flight + ' ' + info.from + '→' + info.to + ' · ' + info.status + ' · ' + info.detail;
   fill.style.width = Math.round((info.progress || 0) * 100) + '%';
 }
 function currentFix() {
@@ -857,22 +875,31 @@ function paintMapStats(now) {
   const t = now.getTime();
   const dep = new Date(leg.depart).getTime();
   const arr = new Date(leg.arrive).getTime();
-  const live = !!(pos.live && pos.fix);
+  const live = !!(pos.live && pos.fix && typeof pos.fix.alt === 'number');
   const inAir = t >= dep && t < arr;
+  const before = t < dep;
   const miles = pos.fix ? haversineMi(pos.fix, AIRPORTS[leg.to] || pos.fix) : null;
+  const src = document.getElementById('ms-src');
+  const liveRow = document.getElementById('ms-live');
   flight.textContent = leg.flight;
-  document.getElementById('ms-src').textContent = live ? 'LIVE' : (inAir ? 'EST' : 'APT');
-  const alt = pos.fix && typeof pos.fix.alt === 'number' ? Math.round(pos.fix.alt).toLocaleString('en-US') + ' FT' : '—';
-  const gs = pos.fix && typeof pos.fix.gs === 'number' ? Math.round(pos.fix.gs) + ' KT' : '—';
-  document.getElementById('ms-alt').textContent = 'ALT ' + alt;
-  document.getElementById('ms-gs').textContent = 'GS ' + gs;
+  liveRow.hidden = !live;
+  src.hidden = before;
+  src.textContent = live ? 'LIVE' : 'EST';
+  if (live) {
+    document.getElementById('ms-alt').textContent = 'ALT ' + Math.round(pos.fix.alt).toLocaleString('en-US') + ' FT';
+    document.getElementById('ms-gs').textContent = 'GS ' + (typeof pos.fix.gs === 'number' ? Math.round(pos.fix.gs) + ' KT' : '—');
+  }
   document.getElementById('ms-mi').textContent = miles == null ? '— MI' : Math.round(miles).toLocaleString('en-US') + ' MI';
   document.getElementById('ms-eta').textContent = 'ARV ' + hm(leg.arrive, leg.arriveZone);
-  let togo = 'TO GO —';
-  let progress = 0;
-  if (inAir) { togo = 'TO GO ' + shortRemain(arr - t); progress = (t - dep) / (arr - dep || 1); }
-  else if (t < dep) { togo = 'DEPARTS ' + shortRemain(dep - t); progress = 0; }
-  else { togo = 'LANDED'; progress = 1; }
+  let togo = 'LANDED';
+  let progress = 1;
+  if (before) {
+    togo = 'DEPARTS ' + clockIn(leg.depart, leg.departZone) + ' · in ' + shortRemain(dep - t);
+    progress = 0;
+  } else if (inAir) {
+    togo = 'TO GO ' + shortRemain(arr - t);
+    progress = (t - dep) / (arr - dep || 1);
+  }
   document.getElementById('ms-togo').textContent = togo;
   document.getElementById('ms-fill').style.width = Math.round(progress * 100) + '%';
 }
@@ -1233,12 +1260,19 @@ function channelMutedChoice() {
   try { return localStorage.getItem('landoChannelMuted') === '1'; } catch (e) { return false; }
 }
 function paintMuteButton() {
-  const muted = channelMutedChoice();
   const btn = document.getElementById('ch-mute');
   if (!btn) return;
-  btn.textContent = muted ? 'MUTED' : 'SND';
+  if (typeof isWeather === 'function' && isWeather() && !musicOff) {
+    const on = !!window.landoMusicOn;
+    btn.textContent = on ? 'MUSIC ON' : 'TAP FOR MUSIC';
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    return;
+  }
+  const muted = channelMutedChoice();
+  btn.textContent = muted ? 'MUTED' : 'SOUND';
   btn.setAttribute('aria-pressed', muted ? 'true' : 'false');
 }
+window.paintMuteButton = paintMuteButton;
 function setChannelMutedChoice(muted) {
   try { localStorage.setItem('landoChannelMuted', muted ? '1' : '0'); } catch (e) { /* private mode */ }
   paintMuteButton();
@@ -1265,9 +1299,41 @@ function toggleChannelMute() {
     else { channelPlayer.unMute(); channelPlayer.setVolume(100); channelPlayer.playVideo(); }
   } catch (e) { /* player gone */ }
 }
-function paintDock(ch) {
-  document.getElementById('ch-num').textContent = String(ch.number).padStart(2, '0');
-  document.getElementById('ch-name').textContent = ch.kind === 'weather' ? 'WEATHER' : ch.name;
+function channelLabel(ch) {
+  return ch.number === 8 ? 'WEATHER LOUNGE' : ch.name;
+}
+function paintMenu() {
+  const list = document.getElementById('ch-list');
+  if (!list) return;
+  list.innerHTML = channelList().map((ch) => {
+    const on = ch.number === channelNumber ? ' on' : '';
+    return '<button type="button" class="ch-row' + on + '" data-ch="' + ch.number + '">' + String(ch.number).padStart(2, '0') + '  ' + channelLabel(ch) + '</button>';
+  }).join('');
+  paintMuteButton();
+}
+let menuTimer = null;
+function closeMenu() {
+  const menu = document.getElementById('ch-menu');
+  if (!menu || menu.hidden) return;
+  menu.hidden = true;
+  document.getElementById('ch-tab').setAttribute('aria-expanded', 'false');
+  clearTimeout(menuTimer);
+}
+function resetMenuTimer() {
+  clearTimeout(menuTimer);
+  menuTimer = setTimeout(closeMenu, 5000);
+}
+function openMenu() {
+  const menu = document.getElementById('ch-menu');
+  menu.hidden = false;
+  document.getElementById('ch-tab').setAttribute('aria-expanded', 'true');
+  paintMenu();
+  resetMenuTimer();
+}
+function toggleMenu() {
+  const menu = document.getElementById('ch-menu');
+  if (menu.hidden) openMenu();
+  else closeMenu();
 }
 function flashTune(ch) {
   const stat = document.getElementById('tv-static');
@@ -1286,7 +1352,7 @@ function tune(number, first) {
   channelNumber = ch.number;
   try { localStorage.setItem('landoLoungeChannel', String(ch.number)); } catch (e) { /* private mode */ }
   document.body.classList.toggle('is-weather', ch.kind === 'weather');
-  paintDock(ch);
+  paintMenu();
   if (ch.kind === 'weather') document.body.classList.remove('map-open');
   if (!first) flashTune(ch);
   if (ch.kind === 'weather') {
@@ -1308,10 +1374,26 @@ function tuneRel(dir) {
   if (idx < 0) idx = 0;
   tune(list[(idx + dir + list.length) % list.length].number, false);
 }
-document.getElementById('ch-up').addEventListener('click', () => { unlockChannelSound(); tuneRel(1); });
-document.getElementById('ch-down').addEventListener('click', () => { unlockChannelSound(); tuneRel(-1); });
-document.getElementById('ch-home').addEventListener('click', () => { unlockChannelSound(); tune(8); });
-document.getElementById('ch-mute').addEventListener('click', () => toggleChannelMute());
+document.getElementById('ch-tab').addEventListener('click', () => toggleMenu());
+document.getElementById('ch-list').addEventListener('click', (event) => {
+  const row = event.target.closest('[data-ch]');
+  if (!row) return;
+  unlockChannelSound();
+  tune(Number(row.getAttribute('data-ch')));
+  closeMenu();
+});
+document.getElementById('ch-up').addEventListener('click', () => { unlockChannelSound(); tuneRel(1); paintMenu(); resetMenuTimer(); });
+document.getElementById('ch-down').addEventListener('click', () => { unlockChannelSound(); tuneRel(-1); paintMenu(); resetMenuTimer(); });
+document.getElementById('ch-mute').addEventListener('click', () => {
+  if (isWeather() && !musicOff) {
+    if (window.landoTapMusic) window.landoTapMusic();
+    paintMuteButton();
+    closeMenu();
+    return;
+  }
+  toggleChannelMute();
+  resetMenuTimer();
+});
 document.getElementById('ch-unlock').addEventListener('click', () => unlockChannelSound());
 document.getElementById('map-pin').addEventListener('click', (event) => {
   if (event.target.closest('#map-close')) { setMapOpen(false); return; }
@@ -1342,7 +1424,10 @@ window.addEventListener('touchend', (event) => {
 });
 document.getElementById('ch-sound').addEventListener('click', () => unlockChannelSound());
 window.addEventListener('pointerdown', (event) => {
-  if (event.target.closest && event.target.closest('#ch-mute')) return;
+  const target = event.target;
+  const inMenu = target.closest && target.closest('#ch-menu, #ch-tab');
+  if (!inMenu) closeMenu();
+  if (target.closest && target.closest('#ch-mute')) return;
   unlockChannelSound();
 }, true);
 paintMuteButton();

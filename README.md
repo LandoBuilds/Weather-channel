@@ -14,7 +14,7 @@ Cedar Park is the station that comes up first. Austin shows on the Cedar Park re
 4. Launch **Weather Lounge** from the Home Screen. It opens full screen on the kiosk.
 5. Tap once when you see **TAP FOR MUSIC**. Safari will not start the music until you do. That tap is remembered by the kiosk page, so the music keeps playing when the city changes.
 
-`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off. `?panel=false` hides the side panel. `?ads=false` skips the commercial breaks. `?tracker=false` hides the flight map. `?scroll=false` stops the side panel from scrolling. `?ch=25` tunes a channel. Channel 8 is the lounge. The side panel stays on that channel only. Channel buttons stay on screen on every channel, including over a video.
+`?crt=false` turns the scanline overlay off. `?rotate=90` (or any number of seconds) changes how long each city stays up. The default is 4 minutes. `?music=false` leaves the music off. `?panel=false` hides the side panel. `?ads=false` skips the commercial breaks. `?tracker=false` hides the flight map. `?scroll=false` stops the side panel from scrolling. `?ch=25` tunes a channel. Channel 8 is the lounge. The side panel stays on that channel only. A small CH tab in the corner opens the channel list; it stays above the video.
 
 A one-line flight status stays pinned across the top on every channel. On channel 8 the side panel scrolls the countdown, the next leg, the hotel, Asunción, and Cedar Park. The flight map is a small tile on the forecast; tap it to open the moving map. The public page never includes a booking code, passenger name, or seat.
 
