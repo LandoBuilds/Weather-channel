@@ -57,12 +57,19 @@ body:not(.is-weather) #bump,body:not(.is-weather) #adbreak,body:not(.is-weather)
 #flight-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
 #flight-meter{height:4px;margin:2px 0 2px;background:#06122e}
 #flight-meter > span{display:block;height:100%;width:0;background:linear-gradient(#ffff00,#e8862a)}
-#ch-dock{position:fixed;z-index:92;left:max(8px,env(safe-area-inset-left));top:calc(env(safe-area-inset-top) + 42px);display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:6px;max-width:min(420px,calc(72vw - 16px));pointer-events:auto}
-body:not(.is-weather) #ch-dock{max-width:calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))}
-#ch-dock button{min-height:44px;min-width:44px;box-sizing:border-box;background:#061208;color:#39ff14;border:3px solid #39ff14;font:bold 15px Star4000,ui-monospace,monospace;padding:8px 10px;cursor:pointer;text-shadow:0 0 6px #39ff14;touch-action:manipulation}
-#ch-readout{min-height:44px;min-width:52px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:2px 8px;background:rgba(0,0,0,.82);border:3px solid #39ff14;color:#39ff14;text-shadow:0 0 6px #39ff14;line-height:1.05;max-width:148px}
-#ch-num{font:bold 20px StarLarge,ui-monospace,monospace}
-#ch-name{font-size:11px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ch-tab{position:fixed;z-index:94;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));width:44px;height:44px;padding:0;opacity:.62;background:rgba(6,18,8,.55);color:#39ff14;border:2px solid rgba(57,255,20,.9);font:bold 14px Star4000,ui-monospace,monospace;cursor:pointer;touch-action:manipulation}
+#ch-tab[aria-expanded="true"]{opacity:1}
+#ch-menu{position:fixed;z-index:94;left:max(8px,env(safe-area-inset-left));bottom:calc(max(8px,env(safe-area-inset-bottom)) + 52px);width:min(260px,calc(100vw - 24px));max-height:min(320px,70vh);display:flex;flex-direction:column;overflow:hidden;background:rgba(6,16,40,.94);border:3px solid #39ff14;color:#39ff14;padding:6px;box-shadow:0 0 16px rgba(0,0,0,.55)}
+#ch-list{overflow:auto;min-height:0}
+#ch-menu[hidden]{display:none}
+#ch-menu .ch-row{display:block;width:100%;min-height:44px;text-align:left;background:transparent;color:#39ff14;border:0;border-left:4px solid transparent;font:bold 15px Star4000,ui-monospace,monospace;padding:8px 10px;cursor:pointer;touch-action:manipulation}
+#ch-menu .ch-row.on{background:#102060;border-left-color:#ffb000;color:#ffff00}
+.ch-menu-nav{display:flex;gap:6px;padding-top:6px}
+.ch-menu-nav button{min-height:44px;min-width:44px;flex:1;background:#061208;color:#39ff14;border:2px solid #39ff14;font:bold 14px Star4000,ui-monospace,monospace;cursor:pointer;touch-action:manipulation}
+@media (min-width:521px){
+  #ch-tab,#ch-menu{left:auto;right:max(8px,env(safe-area-inset-right))}
+  #ch-menu{width:calc(28vw - 36px)}
+}
 #panel-viewport{flex:1;min-height:0;overflow:hidden;position:relative}
 #panel-viewport.static{overflow:auto}
 #panel-track{will-change:transform}
@@ -78,11 +85,10 @@ body:not(.is-weather) #ch-dock{max-width:calc(100vw - 16px - env(safe-area-inset
 #leg-now .kicker{color:#8cf;font-size:14px;letter-spacing:.08em}
 #trip-hotel{color:#8cf;font-size:16px;line-height:1.3}
 .leg b{color:#ffff00}
-#map-pin{position:fixed;z-index:70;right:calc(28% + 8px);bottom:max(8px,env(safe-area-inset-bottom));width:214px;display:flex;flex-direction:column;background:#06122e;border:3px solid #e8862a;box-shadow:0 0 0 1px #000,0 0 18px rgba(0,0,0,.55)}
-body.no-panel #map-pin{right:max(8px,env(safe-area-inset-right))}
+#map-pin{position:relative;z-index:2;flex:0 0 auto;width:100%;display:flex;flex-direction:column;background:#06122e;border-bottom:3px solid #e8862a}
 body:not(.is-weather) #map-pin,body.no-tracker #map-pin{display:none !important}
-#map-pin-canvas{height:132px}
-body.map-open #map-pin{top:calc(env(safe-area-inset-top) + 42px);left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));width:auto;z-index:88}
+#map-pin-canvas{height:120px}
+body.map-open #map-pin{position:fixed;z-index:88;top:calc(env(safe-area-inset-top) + 42px);left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));width:auto}
 body.map-open #map-pin-canvas{flex:1;height:auto;min-height:160px}
 .radar-map{position:relative;background:#041018;overflow:hidden}
 .radar-map::after{content:"";pointer-events:none;position:absolute;inset:0;z-index:450;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 4px);opacity:.4}
@@ -90,6 +96,7 @@ body.map-open #map-pin-canvas{flex:1;height:auto;min-height:160px}
 #map-stats{position:relative;z-index:460;padding:5px 7px 6px;background:linear-gradient(#102060,#0c1868);color:#ffff00;font:bold 12px Star4000,ui-monospace,monospace;line-height:1.3;text-shadow:1px 1px #000}
 body.map-open #map-stats{font-size:18px;padding:10px 14px 12px}
 #map-stats .row{display:flex;justify-content:space-between;gap:8px}
+#ms-live[hidden],#ms-src[hidden]{display:none !important}
 #map-stats b{color:#ffb000}
 #ms-meter{height:7px;margin-top:4px;background:#06122e;border:1px solid #e8862a}
 #ms-fill{display:block;height:100%;width:0;background:linear-gradient(#ffff00,#e8862a)}
@@ -108,17 +115,18 @@ body.map-open #map-close{display:block}
 @media (max-width:520px){
   #tv{flex-direction:column}
   #stage{flex:1 1 auto;min-height:0}
-  #panel{width:100%;flex:0 0 34%;max-height:34%;border-left:0;border-top:4px solid #e8862a}
-  #map-pin{right:max(8px,env(safe-area-inset-right));bottom:calc(34% + 8px)}
-  body.map-open #map-pin{bottom:max(8px,env(safe-area-inset-bottom))}
-  #ch-dock{max-width:calc(100vw - 16px - env(safe-area-inset-left))}
+  #panel{width:100%;flex:0 0 auto;max-height:42%;border-left:0;border-top:4px solid #e8862a}
+  #flight-line{white-space:normal}
+  #tv{padding-top:calc(env(safe-area-inset-top) + 52px)}
+  #map-pin-canvas{height:92px}
+  #map-stats{font-size:11px;padding:3px 6px 4px}
+  #panel-viewport{padding-bottom:calc(52px + env(safe-area-inset-bottom))}
+  #ch-menu{max-height:210px}
 }
 @media (orientation:landscape) and (max-height:500px){
-  #map-pin{width:188px}
   #map-pin-canvas{height:96px}
   #map-stats{font-size:11px}
   body.map-open #map-stats{font-size:15px}
-  #ch-dock{max-width:calc(70vw - 8px)}
 }
 @media (prefers-reduced-motion: reduce){
   #panel-viewport{overflow:auto}
