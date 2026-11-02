@@ -10,6 +10,7 @@
 <link rel="icon" href="lando-icon.png">
 <link rel="apple-touch-icon" href="lando-icon.png">
 <link rel="manifest" href="lando.webmanifest">
+<script src="channels.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="lando-config.js"></script>
 <style>
@@ -45,6 +46,32 @@ body.no-panel #stage{flex:1 1 100%}
 #music-hint{position:fixed;left:2vw;bottom:2.5vh;z-index:31;pointer-events:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(10,20,90,.82);border:3px solid #e8862a;color:#ffb000;font:bold 18px Star4000,Arial,sans-serif;letter-spacing:.06em;text-shadow:2px 2px #000}
 #music-hint svg{display:block;flex:none}
 #music-hint[hidden]{display:none}
+#channel-stage{position:absolute;inset:0;z-index:5;background:#000}
+body.is-weather #channel-stage{display:none !important}
+body:not(.is-weather) #panel{display:none}
+body:not(.is-weather) #stage{flex:1 1 100%}
+body:not(.is-weather) #bump,body:not(.is-weather) #flight-segment,body:not(.is-weather) #adbreak,body:not(.is-weather) #eights{display:none !important}
+#ch-yt-host,#ch-archive,#ch-yt{position:absolute;inset:0;width:100%;height:100%}
+#ch-yt-host iframe,#ch-archive{width:100%;height:100%;border:0}
+#info-card{position:absolute;left:28px;bottom:36px;z-index:4;max-width:48%;background:rgba(0,0,0,.8);color:#fff;padding:14px 18px;border-left:6px solid #e8862a;text-shadow:2px 2px #000}
+#info-card[hidden]{display:none}
+#card-kicker{font-size:13px;letter-spacing:.16em;color:#fff}
+#card-artist{color:#ffb000;font-size:22px}
+#card-title{font:bold 30px StarLarge,Arial,sans-serif;line-height:1.05;margin:4px 0}
+#card-meta{font-size:16px;color:#ddd}
+#ch-sound{position:absolute;top:16px;right:16px;z-index:5;padding:10px 14px;background:#102060;color:#ffb000;border:3px solid #e8862a;font:bold 18px Star4000,Arial,sans-serif;cursor:pointer}
+#ch-sound[hidden]{display:none}
+#ch-status{position:absolute;left:16px;top:16px;z-index:4;color:#ffb000;font-size:16px;text-shadow:2px 2px #000}
+#tv-static{position:fixed;inset:0;z-index:40;pointer-events:none;opacity:.9;background:repeating-linear-gradient(90deg,#0a0a0a 0 2px,#d8d8d8 2px 3px,#222 3px 5px,#f5f5f5 5px 6px);animation:snow .08s steps(2) infinite}
+#tv-static[hidden]{display:none}
+@keyframes snow{to{background-position:18px 11px}}
+#osd{position:fixed;top:5vh;right:3vw;z-index:41;pointer-events:none;min-width:240px;padding:10px 16px 12px;background:rgba(0,0,0,.78);border:3px solid #39ff14;color:#39ff14;text-shadow:0 0 8px #39ff14;font-family:Star4000,ui-monospace,monospace}
+#osd[hidden]{display:none}
+#osd .num{font:bold 48px StarLarge,ui-monospace,monospace;line-height:.9}
+#osd .nm{margin-top:6px;font-size:16px;letter-spacing:.04em}
+#ch-pad{position:fixed;right:16px;bottom:18px;z-index:28;display:flex;flex-direction:column;gap:8px;opacity:0;transition:opacity .7s;pointer-events:none}
+#ch-pad.show{opacity:1;pointer-events:auto}
+#ch-pad button{background:#061208;color:#39ff14;border:3px solid #39ff14;font:bold 18px Star4000,ui-monospace,monospace;padding:8px 12px;cursor:pointer;text-shadow:0 0 6px #39ff14}
 #panel-viewport{flex:1;min-height:0;overflow:hidden;position:relative}
 #panel-viewport.static{overflow:auto}
 #panel-track{will-change:transform}
@@ -82,7 +109,7 @@ body.no-panel #stage{flex:1 1 100%}
 }
 </style>
 </head>
-<body>
+<body class="is-weather">
 <div id="tv">
   <div id="stage">
     <iframe id="f" title="Local forecast" allow="fullscreen"></iframe>
@@ -100,6 +127,18 @@ body.no-panel #stage{flex:1 1 100%}
         <div id="ad-caption"></div>
         <button id="ad-sound" type="button" hidden>TAP FOR SOUND</button>
       </div>
+    </div>
+    <div id="channel-stage">
+      <div id="ch-yt-host"><div id="ch-yt"></div></div>
+      <iframe id="ch-archive" hidden title="Archive film" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <div id="info-card" hidden>
+        <div id="card-kicker">NOW PLAYING</div>
+        <div id="card-artist"></div>
+        <div id="card-title"></div>
+        <div id="card-meta"></div>
+      </div>
+      <button id="ch-sound" type="button" hidden>TAP FOR SOUND</button>
+      <div id="ch-status"></div>
     </div>
   </div>
   <aside id="panel" aria-label="Trip and local conditions">
@@ -141,6 +180,9 @@ body.no-panel #stage{flex:1 1 100%}
   </aside>
 </div>
 <div id="crt"></div>
+<div id="tv-static" hidden></div>
+<div id="osd" hidden><div class="num">08</div><div class="nm">LANDO'S WEATHER LOUNGE</div></div>
+<div id="ch-pad"><button type="button" id="ch-up">CH+</button><button type="button" id="ch-down">CH-</button></div>
 <audio id="music" preload="auto" playsinline></audio>
 <div id="music-catch" aria-hidden="true"></div>
 <div id="music-hint"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#ffb000" d="M3 9v6h4l5 4V5L7 9H3z"/><path fill="none" stroke="#ffb000" stroke-width="2" stroke-linecap="round" d="M16.5 9a3.5 3.5 0 010 6M19 6.5a7 7 0 010 11"/></svg>TAP FOR MUSIC</div>
@@ -263,7 +305,7 @@ if (musicOff) {
     return a;
   }
   function playIndex(index) {
-    if (!tracks.length || breakHold) return;
+    if (!tracks.length || breakHold || channelHold) return;
     trackIndex = ((index % tracks.length) + tracks.length) % tracks.length;
     const next = trackUrl(tracks[trackIndex]);
     const absolute = new URL(next, location.href).href;
@@ -276,7 +318,7 @@ if (musicOff) {
     else ignorePause = false;
   }
   function onGesture() {
-    if (breakHold) return;
+    if (breakHold || channelHold) return;
     unlocked = true;
     if (!audio.paused && audio.currentTime > 0) return;
     playIndex(trackIndex);
@@ -291,15 +333,15 @@ if (musicOff) {
   audio.addEventListener('playing', () => { ignorePause = false; errorStreak = 0; hideUnlock(); });
   audio.addEventListener('pause', () => {
     const atEnd = Number.isFinite(audio.duration) && audio.currentTime >= audio.duration - 0.3;
-    if (!unlocked || ignorePause || breakHold || audio.ended || atEnd) return;
+    if (!unlocked || ignorePause || breakHold || channelHold || audio.ended || atEnd) return;
     showUnlock();
   });
-  audio.addEventListener('ended', () => { if (!breakHold) playIndex(trackIndex + 1); });
+  audio.addEventListener('ended', () => { if (!breakHold && !channelHold) playIndex(trackIndex + 1); });
   audio.addEventListener('error', () => {
     errorStreak += 1;
     if (!tracks.length || errorStreak > tracks.length) { showUnlock(); return; }
     const next = (trackIndex + 1) % tracks.length;
-    if (unlocked && !breakHold) playIndex(next);
+    if (unlocked && !breakHold && !channelHold) playIndex(next);
     else {
       trackIndex = next;
       ignorePause = true;
@@ -317,7 +359,7 @@ if (musicOff) {
     audio.src = trackUrl(tracks[0]);
     audio.volume = 0.75;
     ignorePause = false;
-    if (unlocked && !breakHold) playIndex(0);
+    if (unlocked && !breakHold && !channelHold) playIndex(0);
   }).catch(() => showUnlock());
 }
 
@@ -417,7 +459,7 @@ document.getElementById('ad-sound').addEventListener('click', () => {
   document.getElementById('ad-sound').hidden = true;
 });
 async function runBreak() {
-  if (adsOff || breakRunning || !(C.commercials || []).length) return;
+  if (adsOff || breakRunning || !(C.commercials || []).length || !isWeather()) return;
   breakRunning = true;
   const ad = document.getElementById('adbreak');
   const bumper = document.getElementById('ad-bumper');
@@ -427,22 +469,27 @@ async function runBreak() {
   playerWrap.hidden = true;
   holdMusic();
   await sleep(4000);
+  if (!isWeather()) { breakRunning = false; ad.hidden = true; breakHold = false; return; }
   bumper.hidden = true;
   playerWrap.hidden = false;
   let ready = true;
   try { await loadYouTube(); } catch (e) { ready = false; }
-  if (ready) {
-    for (const spot of pickCommercials()) await playCommercial(spot);
+  if (ready && isWeather()) {
+    for (const spot of pickCommercials()) {
+      if (!isWeather()) break;
+      await playCommercial(spot);
+    }
   }
   ad.hidden = true;
   playerWrap.hidden = true;
   bumper.hidden = false;
   breakRunning = false;
-  releaseMusic();
+  if (isWeather()) releaseMusic();
+  else breakHold = false;
 }
 
 async function showTrackerSegment() {
-  if (trackerOff) return;
+  if (trackerOff || !isWeather()) return;
   const hit = airborneLeg(nowDate());
   if (!hit || hit.phase !== 'air') return;
   const el = document.getElementById('flight-segment');
@@ -913,6 +960,306 @@ if (!trackerOff) {
   document.body.appendChild(leaflet);
 } else setupScroll();
 rotationLoop();
+
+// ---- channel system ----
+let channelHold = false;
+let channelNumber = 8;
+let channelToken = 0;
+let channelPlayer = null;
+let channelQueue = [];
+let channelIndex = 0;
+
+function isWeather() {
+  return channelNumber === 8;
+}
+function channelList() {
+  return (window.LANDO_CHANNELS || []).slice().sort((a, b) => a.number - b.number);
+}
+function channelByNumber(number) {
+  return channelList().find((ch) => ch.number === number) || null;
+}
+function resetChannelSlot() {
+  const host = document.getElementById('ch-yt-host');
+  if (!document.getElementById('ch-yt')) {
+    const slot = document.createElement('div');
+    slot.id = 'ch-yt';
+    host.insertBefore(slot, host.firstChild);
+  }
+}
+function stopChannelPlayback() {
+  channelToken += 1;
+  const frame = document.getElementById('ch-archive');
+  frame.onload = null;
+  frame.onerror = null;
+  frame.src = 'about:blank';
+  frame.hidden = true;
+  document.getElementById('ch-yt-host').hidden = false;
+  try { if (channelPlayer && channelPlayer.destroy) channelPlayer.destroy(); } catch (e) { /* gone */ }
+  channelPlayer = null;
+  resetChannelSlot();
+  document.getElementById('info-card').hidden = true;
+  document.getElementById('ch-sound').hidden = true;
+  document.getElementById('ch-status').textContent = '';
+}
+function holdForChannel() {
+  if (channelHold || musicOff) return;
+  channelHold = true;
+  ignorePause = true;
+  hint.hidden = true;
+  if (catcher.isConnected) catcher.remove();
+  if (audio && !audio.paused) {
+    musicWasPlaying = true;
+    audio.pause();
+  }
+}
+function releaseFromChannel() {
+  if (!channelHold) return;
+  channelHold = false;
+  if (musicWasPlaying && !musicOff && audio && !breakHold) {
+    ignorePause = true;
+    const pending = audio.play();
+    if (pending && pending.then) pending.catch(() => { ignorePause = false; showUnlock(); });
+  } else if (!breakHold) {
+    ignorePause = false;
+    if (!unlocked && !musicOff) showUnlock();
+  }
+}
+function showCard(item, visible) {
+  const card = document.getElementById('info-card');
+  if (!visible || !item || !item.artist) { card.hidden = true; return; }
+  document.getElementById('card-artist').textContent = item.artist;
+  document.getElementById('card-title').textContent = item.title;
+  const bits = [item.album, item.label, item.year].filter(Boolean);
+  document.getElementById('card-meta').textContent = bits.join('  ·  ');
+  card.hidden = false;
+}
+function playYouTubeItem(item, token) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let mine = null;
+    let startTimer = null;
+    let hideCard = null;
+    let watch = null;
+    const sound = document.getElementById('ch-sound');
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(startTimer);
+      clearTimeout(hideCard);
+      clearInterval(watch);
+      try { if (mine && mine.destroy) mine.destroy(); } catch (e) { /* gone */ }
+      if (channelPlayer === mine) channelPlayer = null;
+      if (token === channelToken) {
+        sound.hidden = true;
+        showCard(item, false);
+        resetChannelSlot();
+      }
+      resolve();
+    };
+    startTimer = setTimeout(finish, 8000);
+    watch = setInterval(() => { if (token !== channelToken) finish(); }, 400);
+    document.getElementById('ch-yt-host').hidden = false;
+    document.getElementById('ch-archive').hidden = true;
+    if (item.artist) {
+      showCard(item, true);
+      hideCard = setTimeout(() => { if (!settled && token === channelToken) showCard(item, false); }, 7000);
+    } else showCard(item, false);
+    const begin = () => {
+      try {
+        const host = document.getElementById('ch-yt-host');
+        mine = new YT.Player('ch-yt', {
+          width: Math.max(host.clientWidth, 320),
+          height: Math.max(host.clientHeight, 180),
+          videoId: item.id,
+          host: 'https://www.youtube-nocookie.com',
+          playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1, fs: 0, origin: location.origin },
+          events: {
+            onReady: (event) => {
+              mine = event.target;
+              channelPlayer = event.target;
+              const box = document.getElementById('ch-yt-host');
+              try { event.target.setSize(box.clientWidth, box.clientHeight); } catch (e) { /* size */ }
+              try { event.target.unMute(); event.target.setVolume(100); event.target.playVideo(); } catch (e) { /* 8s skip */ }
+              setTimeout(() => {
+                if (settled || token !== channelToken) return;
+                let state = -1;
+                try { state = event.target.getPlayerState(); } catch (e) { state = -1; }
+                if (state !== 1 && state !== 3) {
+                  try { event.target.mute(); event.target.playVideo(); sound.hidden = false; } catch (e) { /* skip */ }
+                }
+              }, 1500);
+            },
+            onStateChange: (event) => {
+              if (token !== channelToken) { finish(); return; }
+              if (event.data === YT.PlayerState.PLAYING) {
+                clearTimeout(startTimer);
+                let muted = false;
+                try { muted = event.target.isMuted(); } catch (e) { muted = false; }
+                sound.hidden = !muted;
+              } else if (event.data === YT.PlayerState.ENDED) {
+                clearTimeout(hideCard);
+                if (item.artist) {
+                  showCard(item, true);
+                  setTimeout(() => { if (!settled && token === channelToken) finish(); }, 5000);
+                } else finish();
+              }
+            },
+            onError: () => { setTimeout(finish, 400); },
+          },
+        });
+      } catch (e) { finish(); }
+    };
+    if (window.YT && window.YT.Player) begin();
+    else loadYouTube().then(() => { if (token === channelToken) begin(); else finish(); }).catch(() => finish());
+  });
+}
+function playArchiveItem(item, token) {
+  return new Promise((resolve) => {
+    const frame = document.getElementById('ch-archive');
+    document.getElementById('ch-yt-host').hidden = true;
+    frame.hidden = false;
+    let settled = false;
+    let playTimer = null;
+    let watch = null;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(skip);
+      clearTimeout(playTimer);
+      clearInterval(watch);
+      frame.onload = null;
+      frame.onerror = null;
+      resolve();
+    };
+    const skip = setTimeout(() => {
+      if (token === channelToken) frame.src = 'about:blank';
+      done();
+    }, 8000);
+    watch = setInterval(() => { if (token !== channelToken) done(); }, 400);
+    frame.onload = () => {
+      if (token !== channelToken) { done(); return; }
+      clearTimeout(skip);
+      const ms = Math.min(Math.max((item.seconds || 480), 30), 1500) * 1000;
+      playTimer = setTimeout(() => {
+        if (token !== channelToken) { done(); return; }
+        frame.src = 'about:blank';
+        done();
+      }, ms);
+    };
+    frame.onerror = () => {
+      if (token === channelToken) frame.src = 'about:blank';
+      done();
+    };
+    frame.src = 'https://archive.org/embed/' + encodeURIComponent(item.id) + '?autoplay=1';
+  });
+}
+async function runChannel(ch) {
+  const token = ++channelToken;
+  channelQueue = shuffleCopy(ch.items || []);
+  channelIndex = 0;
+  if (!channelQueue.length) {
+    document.getElementById('ch-status').textContent = 'NO SIGNAL';
+    return;
+  }
+  while (token === channelToken) {
+    const item = channelQueue[channelIndex % channelQueue.length];
+    channelIndex += 1;
+    document.getElementById('ch-status').textContent = item.show || item.artist || item.title || '';
+    if (item.source === 'archive') await playArchiveItem(item, token);
+    else await playYouTubeItem(item, token);
+    if (token !== channelToken) return;
+    if (channelIndex % channelQueue.length === 0) channelQueue = shuffleCopy(channelQueue);
+  }
+}
+function flashTune(ch) {
+  const stat = document.getElementById('tv-static');
+  const osd = document.getElementById('osd');
+  osd.querySelector('.num').textContent = String(ch.number).padStart(2, '0');
+  osd.querySelector('.nm').textContent = ch.name;
+  stat.hidden = false;
+  osd.hidden = false;
+  setTimeout(() => { stat.hidden = true; }, 500);
+  clearTimeout(flashTune.timer);
+  flashTune.timer = setTimeout(() => { osd.hidden = true; }, 2800);
+}
+let padTimer = null;
+function pokePad() {
+  const pad = document.getElementById('ch-pad');
+  pad.classList.add('show');
+  clearTimeout(padTimer);
+  padTimer = setTimeout(() => pad.classList.remove('show'), 4000);
+}
+function tune(number, first) {
+  const ch = channelByNumber(number);
+  if (!ch) return;
+  const changed = number !== channelNumber || first;
+  channelNumber = ch.number;
+  try { localStorage.setItem('landoLoungeChannel', String(ch.number)); } catch (e) { /* private mode */ }
+  document.body.classList.toggle('is-weather', ch.kind === 'weather');
+  if (!first) flashTune(ch);
+  pokePad();
+  if (ch.kind === 'weather') {
+    stopChannelPlayback();
+    releaseFromChannel();
+    document.getElementById('adbreak').hidden = true;
+  } else {
+    document.getElementById('adbreak').hidden = true;
+    document.getElementById('flight-segment').hidden = true;
+    holdForChannel();
+    runChannel(ch);
+  }
+}
+function tuneRel(dir) {
+  const list = channelList();
+  if (!list.length) return;
+  let idx = list.findIndex((ch) => ch.number === channelNumber);
+  if (idx < 0) idx = 0;
+  tune(list[(idx + dir + list.length) % list.length].number, false);
+}
+document.getElementById('ch-up').addEventListener('click', () => tuneRel(1));
+document.getElementById('ch-down').addEventListener('click', () => tuneRel(-1));
+window.addEventListener('keydown', (event) => {
+  const code = event.keyCode || event.which;
+  const up = event.key === 'ArrowUp' || event.key === 'PageUp' || event.key === 'ChannelUp' || code === 427;
+  const down = event.key === 'ArrowDown' || event.key === 'PageDown' || event.key === 'ChannelDown' || code === 428;
+  if (!up && !down) return;
+  event.preventDefault();
+  tuneRel(up ? 1 : -1);
+});
+let swipeY = null;
+window.addEventListener('touchstart', (event) => {
+  const t = event.changedTouches[0] || event.touches[0];
+  swipeY = t ? t.clientY : null;
+  pokePad();
+}, { passive: true });
+window.addEventListener('touchend', (event) => {
+  if (swipeY == null) return;
+  const t = event.changedTouches[0] || event.touches[0];
+  if (!t) { swipeY = null; return; }
+  const dy = t.clientY - swipeY;
+  swipeY = null;
+  if (Math.abs(dy) < 70) return;
+  tuneRel(dy < 0 ? 1 : -1);
+});
+window.addEventListener('pointermove', pokePad);
+document.getElementById('ch-sound').addEventListener('click', () => {
+  if (!channelPlayer) return;
+  try { channelPlayer.unMute(); channelPlayer.setVolume(100); channelPlayer.playVideo(); } catch (e) { /* stay muted */ }
+  document.getElementById('ch-sound').hidden = true;
+});
+(function initChannel() {
+  const list = channelList();
+  const fromQuery = parseInt(qs.get('ch'), 10);
+  let initial = 8;
+  if (channelByNumber(fromQuery)) initial = fromQuery;
+  else {
+    const saved = parseInt(localStorage.getItem('landoLoungeChannel') || '', 10);
+    if (channelByNumber(saved)) initial = saved;
+  }
+  channelNumber = initial === 8 ? 0 : initial;
+  tune(initial, true);
+  if (fromQuery) flashTune(channelByNumber(initial));
+})();
 </script>
 </body>
 </html>
