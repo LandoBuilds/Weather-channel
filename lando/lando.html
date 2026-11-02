@@ -11,7 +11,7 @@
 <link rel="icon" href="lando-icon.png">
 <link rel="apple-touch-icon" href="lando-icon.png">
 <link rel="manifest" href="lando.webmanifest">
-<link rel="stylesheet" href="lando.css?v=20261103b">
+<link rel="stylesheet" href="lando.css?v=20261103d">
 <script src="channels.js?v=20261103b"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="lando-config.js?v=20261103b"></script>
@@ -48,10 +48,14 @@
     <div id="map-pin">
       <div id="map-pin-canvas" class="radar-map"></div>
       <div id="map-stats">
-        <div class="row"><b id="ms-flight">—</b><span id="ms-src" hidden></span></div>
+        <div class="ms-head"><b id="ms-flight">—</b><span id="ms-src" hidden></span></div>
+        <div class="ms-grid">
+          <div><span class="k">DEP</span><b id="ms-dep">—</b></div>
+          <div><span class="k">ARR</span><b id="ms-arr">—</b></div>
+          <div><span class="k">DIST</span><b id="ms-mi">—</b></div>
+          <div><span class="k" id="ms-togo-k">IN</span><b id="ms-togo">—</b></div>
+        </div>
         <div class="row" id="ms-live" hidden><span id="ms-alt">ALT —</span><span id="ms-gs">GS —</span></div>
-        <div class="row"><span id="ms-mi">— MI</span><span id="ms-eta">ARV —</span></div>
-        <div class="row"><span id="ms-togo">—</span></div>
         <div id="ms-meter"><span id="ms-fill"></span></div>
       </div>
       <button type="button" id="map-close">CLOSE</button>
@@ -697,7 +701,7 @@ function along(leg, now) {
   const nxt = path[Math.min(path.length - 1, idx + 1)];
   return { lat: pos[0], lon: pos[1], heading: bearing(pos, nxt) };
 }
-const CITY_NAME = { AUS: 'Austin', PTY: 'Panama City', ASU: 'Asunción', IAH: 'Houston' };
+const CITY_NAME = { AUS: 'Austin', PTY: 'Panama City', ASU: 'Asuncion', IAH: 'Houston' };
 function shortRemain(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const days = Math.floor(s / 86400);
@@ -835,7 +839,11 @@ function drawAirportLabels(layer, legs) {
       const ap = AIRPORTS[code];
       if (!ap) return;
       L.circleMarker([ap.lat, ap.lon], { radius: 6, color: '#e8862a', weight: 2, fillColor: '#ffff00', fillOpacity: 1, interactive: false }).addTo(layer);
-      L.tooltip({ permanent: true, direction: 'top', offset: [0, -10], className: 'apt-label', opacity: 1 })
+      const place = code === 'AUS' ? { dir: 'right', offset: [8, 0] }
+        : code === 'IAH' ? { dir: 'top', offset: [0, -8] }
+        : code === 'ASU' ? { dir: 'left', offset: [-8, -10] }
+        : { dir: 'left', offset: [-8, 0] };
+      L.tooltip({ permanent: true, direction: place.dir, offset: place.offset, className: 'apt-label', opacity: 1 })
         .setLatLng([ap.lat, ap.lon])
         .setContent(code + ' ' + (CITY_NAME[code] || code))
         .addTo(layer);
@@ -852,12 +860,16 @@ function fitActive(map, chain) {
   if (map._fitKey === key) return;
   const points = [];
   const add = (code) => { const ap = AIRPORTS[code]; if (ap) points.push([ap.lat, ap.lon]); };
-  if (open) chain.legs.forEach((leg) => { add(leg.from); add(leg.to); });
-  else { add(chain.active.from); add(chain.active.to); }
+  chain.legs.forEach((leg) => { add(leg.from); add(leg.to); });
   if (points.length < 2) return;
   map._fitKey = key;
   map.invalidateSize();
-  map.fitBounds(points, { padding: open ? [28, 28] : [16, 16], maxZoom: open ? 5 : 5 });
+  const short = !open && box.offsetHeight < 180;
+  map.fitBounds(points, {
+    paddingTopLeft: open ? [48, 56] : [22, short ? 20 : 28],
+    paddingBottomRight: open ? [48, 48] : [28, short ? 30 : 36],
+    maxZoom: open ? 5 : 4,
+  });
 }
 function updatePlane(fix) {
   if (!pinMap || !fix) {
@@ -893,17 +905,21 @@ function paintMapStats(now) {
     document.getElementById('ms-alt').textContent = 'ALT ' + Math.round(pos.fix.alt).toLocaleString('en-US') + ' FT';
     document.getElementById('ms-gs').textContent = 'GS ' + (typeof pos.fix.gs === 'number' ? Math.round(pos.fix.gs) + ' KT' : '—');
   }
-  document.getElementById('ms-mi').textContent = miles == null ? '— MI' : Math.round(miles).toLocaleString('en-US') + ' MI';
-  document.getElementById('ms-eta').textContent = 'ARV ' + hm(leg.arrive, leg.arriveZone);
-  let togo = 'LANDED';
+  document.getElementById('ms-dep').textContent = clockIn(leg.depart, leg.departZone);
+  document.getElementById('ms-arr').textContent = clockIn(leg.arrive, leg.arriveZone);
+  document.getElementById('ms-mi').textContent = miles == null ? '—' : Math.round(miles).toLocaleString('en-US') + ' MI';
+  const kicker = document.getElementById('ms-togo-k');
+  let togo = '0m';
   let progress = 1;
   if (before) {
-    togo = 'DEPARTS ' + clockIn(leg.depart, leg.departZone) + ' · in ' + shortRemain(dep - t);
+    kicker.textContent = 'IN';
+    togo = shortRemain(dep - t);
     progress = 0;
   } else if (inAir) {
-    togo = 'TO GO ' + shortRemain(arr - t);
+    kicker.textContent = 'TO GO';
+    togo = shortRemain(arr - t);
     progress = (t - dep) / (arr - dep || 1);
-  }
+  } else kicker.textContent = 'DONE';
   document.getElementById('ms-togo').textContent = togo;
   document.getElementById('ms-fill').style.width = Math.round(progress * 100) + '%';
 }
@@ -962,8 +978,10 @@ function bootMaps() {
   }
   pinMap = L.map(box, {
     zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false,
+    zoomSnap: 0.25, zoomDelta: 0.5,
   });
-  const esriAttr = '&copy; Esri, OSM';
+  const esriAttr = '&copy; Esri';
+  pinMap.attributionControl.setPrefix('');
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 16, attribution: esriAttr,
   }).addTo(pinMap);
